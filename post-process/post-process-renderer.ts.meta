@@ -10,6 +10,6 @@
   "subMetas": {},
   "userData": {
     "importAsPlugin": false,
-    "moduleId": "project:///assets/post-process/post-process-renderer.js"
+    "moduleId": "project:///assets/shader-lib/post-process/post-process-renderer.js"
   }
 }
