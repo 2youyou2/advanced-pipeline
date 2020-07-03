@@ -6,7 +6,7 @@
   "_effectAsset": {
     "__uuid__": "156c2533-9b3d-4780-824a-2a7b3a8b2d8c"
   },
-  "_techIdx": 0,
+  "_techIdx": 1,
   "_defines": [
     {
       "USE_NORMAL_MAP": true
