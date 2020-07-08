@@ -7,6 +7,10 @@ export function createFrameBuffer (pipeline: RenderPipeline, device: GFXDevice, 
     // @ts-ignore
     let shadingWidth = pipelineAny._shadingWidth * scale;
     let shadingHeight = pipelineAny._shadingHeight * scale;
+    if (CC_EDITOR) {
+        shadingWidth = device.width;
+        shadingHeight = device.height;
+    }
 
     let format: GFXFormat = pipelineAny._getTextureFormat(GFXFormat.UNKNOWN, GFXTextureUsageBit.COLOR_ATTACHMENT);
     let texture = device.createTexture({

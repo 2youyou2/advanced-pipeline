@@ -26,6 +26,19 @@ CCEffect %{
         # emissiveMap:    { value: grey         }
         
         normalSpeed: { value: [ 1, 0 ] }
+
+        depthDistance: { value: 1. }
+        shallowColor: { value: [1, 1, 1, 1], editor: { type: color }  }
+        deepColor: { value: [0, 0, 0, 0] , editor: { type: color } }
+
+        foamCutOff: { value: 0.2, editor: { parent: USE_FOAM } }
+        foamDepth: { value: 0.2, editor: { parent: USE_FOAM } }
+        foamDistortion: { value: 1.222, editor: { parent: USE_FOAM } }
+        foamColor: { value: [1, 1, 1, 1], editor: { parent: USE_FOAM, type: color } }
+        foamTexture: { value: white, editor: { parent: USE_FOAM } }
+
+        waveVisuals: { value: [ 0.167, 7, 0.54, 1 ], editor: { parent: USE_WAVE } }
+        waveDirections: { value: [ 0, 0.3, 0.6, 0.67 ], editor: { parent: USE_WAVE } }
   - name: transparent
     passes:
     - vert: standard-vs:vert
@@ -52,6 +65,18 @@ CCProgram shared-ubos %{
     vec4 emissiveScaleParam;
     vec2 normalSpeed;
     float normalTile;
+  };
+
+  uniform Water {
+    vec4 shallowColor;
+    vec4 deepColor;
+    vec4 waveVisuals;
+    vec4 waveDirections;
+    vec4 foamColor;
+    float depthDistance;
+    float foamCutOff;
+    float foamDepth;
+    float foamDistortion;
   };
 }%
 
@@ -83,6 +108,64 @@ CCProgram standard-vs %{
   //   out vec2 v_luv;
   // #endif
 
+  #define pi 3.14
+
+  mat3 transpose(mat3 m) {
+    return mat3(m[0][0], m[1][0], m[2][0],
+                m[0][1], m[1][1], m[2][1],
+                m[0][2], m[1][2], m[2][2]);
+  }
+
+  vec3 gerstner(vec3 position, float steepness, float wavelength, float speed, float direction, inout vec3 tangent, inout vec3 binormal)
+  {
+      direction = direction * 2. - 1.;
+      vec2 d = normalize(vec2(cos(pi * direction), sin(pi * direction)));
+      float s = steepness;
+      float k = 2. * pi / wavelength;                                                      
+      float f = k * (dot(d, position.xz) - speed * cc_time.x);
+      float a = s / k;
+
+      tangent += vec3(
+      -d.x * d.x * s * sin(f),
+      d.x * s * cos(f), 
+      -d.x * d.y * s * sin(f)
+      );
+
+      binormal += vec3(
+      -d.x * d.y * s * sin(f),
+      d.y * s * cos(f),
+      -d.y * d.y * s * sin(f)
+      );
+
+      return vec3(
+      d.x * a * cos(f),
+      a * sin(f),
+      d.y * a * cos(f)
+      );
+  }
+
+
+  void gerstnerWaves(vec3 p, vec3 visuals, vec4 directions, out vec3 offset, out vec3 normal, out vec3 T, out vec3 B)
+  {
+      float steepness = visuals.x ;
+      float wavelength = visuals.y;
+      float speed = visuals.z;
+
+      offset = vec3(0,0,0);
+      vec3 tangent = vec3(1, 0, 0);
+      vec3 binormal = vec3(0, 0, 1);
+
+      offset += gerstner(p, steepness, wavelength, speed, directions.x, tangent, binormal);
+      offset += gerstner(p, steepness, wavelength, speed, directions.y, tangent, binormal);
+      offset += gerstner(p, steepness, wavelength, speed, directions.z, tangent, binormal);
+      offset += gerstner(p, steepness, wavelength, speed, directions.w, tangent, binormal);
+
+      normal = normalize(cross(binormal, tangent));
+      // TBN = transpose(mat3(tangent, binormal, normal));
+      T = tangent;
+      B = binormal;
+  }
+
   vec4 vert () {
     StandardVertInput In;
     CCVertInput(In);
@@ -92,13 +175,21 @@ CCProgram standard-vs %{
 
     vec4 worldPos = matWorld * In.position;
 
+    #if USE_WAVE
+      vec3 offset;
+      gerstnerWaves(worldPos.xyz, waveVisuals.xyz, waveDirections, offset, v_normal, v_tangent, v_bitangent);
+      worldPos.xyz += offset;
+    #endif
+
     v_position = worldPos.xyz;
     v_projPos = cc_matProj * cc_matView * worldPos;
 
-    v_normal = normalize((matWorldIT * vec4(In.normal, 0.0)).xyz);
-    #if USE_NORMAL_MAP
-      v_tangent = normalize((matWorld * vec4(In.tangent.xyz, 0.0)).xyz);
-      v_bitangent = cross(v_normal, v_tangent) * In.tangent.w; // note the cross order
+    #if !USE_WAVE
+      v_normal = normalize((matWorldIT * vec4(In.normal, 0.0)).xyz);
+      #if USE_NORMAL_MAP
+        v_tangent = normalize((matWorld * vec4(In.tangent.xyz, 0.0)).xyz);
+        v_bitangent = cross(v_normal, v_tangent) * In.tangent.w; // note the cross order
+      #endif
     #endif
 
     v_uv = a_texCoord;// * tilingOffset.xy + tilingOffset.zw;
@@ -112,6 +203,8 @@ CCProgram standard-vs %{
     // #if USE_LIGHTMAP && HAS_SECOND_UV && !USE_BATCHING && !USE_INSTANCING
     //   v_luv = cc_lightingMapUVParam.xy + a_texCoord1 * cc_lightingMapUVParam.zw;
     // #endif
+
+
 
     return v_projPos;
   }
@@ -134,6 +227,10 @@ CCProgram standard-fs %{
   in vec3 v_normal;
 
   uniform sampler2D depthTexture;
+
+  #if USE_FOAM
+  uniform sampler2D foamTexture;
+  #endif
 
   // #if USE_VERTEX_COLOR
   //   in vec3 v_color;
@@ -178,22 +275,82 @@ CCProgram standard-fs %{
   //   #pragma define ALPHA_TEST_CHANNEL options([a, r])
   // #endif
 
-  vec3 NormalBlend(vec3 A, vec3 B)
+
+  vec3 normalBlend(vec3 A, vec3 B)
   {
     return normalize(vec3(A.rg + B.rg, A.b * B.b));
     // return normalize(A + B);
     // return B;
   }
 
+  vec2 distort(vec2 uv, float amount)
+  {
+      float time = cc_time.x;
+      
+      uv.y += amount * 0.01 * (sin(uv.x * 3.5 + time * 0.35) + sin(uv.x * 4.8 + time * 1.05) + sin(uv.x * 7.3 + time * 0.45)) / 3.0;
+      uv.x += amount * 0.12 * (sin(uv.y * 4.0 + time * 0.5) + sin(uv.y * 6.8 + time * 0.75) + sin(uv.y * 11.3 + time * 0.2)) / 3.0;
+      uv.y += amount * 0.12 * (sin(uv.x * 4.2 + time * 0.64) + sin(uv.x * 6.3 + time * 1.65) + sin(uv.x * 8.2 + time * 0.45)) / 3.0;
+
+      return uv;
+  }
+
+  void foamUVs(vec2 uv, vec4 movement, vec2 offset, vec2 scale, float depth, out vec4 shoreline, out vec4 custom)
+  {
+      float direction1 = movement.x;
+      float direction2 = movement.z;
+      float speed1 = movement.y;
+      float speed2 = movement.w;
+      float scale1 = scale.x;
+      float scale2 = scale.y;
+
+      vec2 shoreline_uv = vec2(uv.x * 0.2, depth);
+      shoreline.xy = Panner(shoreline_uv, 0.5, speed1, vec2(0.,0.), 1/scale1);
+      shoreline.zw = Panner(shoreline_uv, 0.5, speed2, vec2(0.,0.), 1/scale2);
+
+      custom.xy = Panner(uv, direction1, speed1, vec2(0.,0.), 1/scale1);
+      custom.zw = Panner(uv, direction2, speed2, offset, 1/scale2);
+  }
+
+  void foamSampling(vec4 uvs, float cutoff, float distortion, Texture2D tex, out float primary, out float secondary)
+  {
+      primary   = clamp(step(cutoff, texture(tex, distort(uvs.xy, distortion)).r), 0., 1.);
+      secondary = clamp(step(cutoff, texture(tex, distort(uvs.zw, distortion)).g), 0., 1.);
+  }
+
   void surf (out StandardSurface s) {
     vec4 baseColor = albedo;
 
-    vec2 depthUv = v_projPos.xy / v_projPos.w;
-    float objectdepth = unpackRGBAToDepth(texture(depthTexture, depthUv));
-    // float depth = clamp(v_projPos.z/1000. - objectdepth/1000., 0., 1.);
+    // depth
+    vec2 depthUv = (v_projPos.xy / v_projPos.w) * 0.5 + 0.5;
+    #if USE_FLOAT_TEXTURE
+      float sceneDepth = texture(depthTexture, depthUv).r;
+    #else
+      float sceneDepth = unpackRGBAToDepth(texture(depthTexture, depthUv)) * 10000.;
+    #endif
+    float waterDepth = v_projPos.z;
+    float depth = clamp((sceneDepth - waterDepth) / depthDistance, 0., 1.);
+    // float depth = clamp(sceneDepth / depthDistance, 0., 1.);
 
-    // baseColor += depth * vec4(1.0, 0., 0., 0.);
-    s.albedo = vec4(objectdepth, 0., 0., 1.);
+    baseColor += mix(shallowColor, deepColor, depth);
+    // baseColor = vec4(depth);
+    
+    // foam
+    #if USE_FOAM
+      vec2 foamUv = distort(v_position.xz, foamDistortion);
+      float foamValue = texture(foamTexture, foamUv * 4.).r;
+      foamValue = clamp(step(foamCutOff, foamValue), 0., 1.);
+      vec4 finalFoamColor = vec4(foamValue) * foamColor;
+
+      baseColor = mix(baseColor, finalFoamColor,  step(0., foamDepth - depth));
+    #endif
+
+
+    // if (depth > foamCutOff) {
+    //   baseColor = foamColor;
+    // }
+    // else {
+    //   baseColor += depth * vec4(1.0);
+    // }
 
     // #if USE_VERTEX_COLOR
     //   baseColor.rgb *= v_color;
@@ -203,7 +360,7 @@ CCProgram standard-fs %{
     //   texColor.rgb = SRGBToLinear(texColor.rgb);
     //   baseColor *= texColor;
     // #endif
-    // s.albedo = baseColor;
+    s.albedo = baseColor;
     // s.albedo.rgb *= albedoScaleAndCutoff.xyz;
 
     // #if USE_ALPHA_TEST
@@ -211,37 +368,37 @@ CCProgram standard-fs %{
     // #endif
 
 
-    // s.normal = v_normal;
-    // #if USE_NORMAL_MAP
-    //   vec2 normalUV = v_uv * normalTile;
-    //   vec2 moveUV = normalUV + normalSpeed * cc_time.x / 40.;
-    //   vec3 nmmp = NormalBlend(texture(normalMap, moveUV).xyz - vec3(.5), texture(normalMap, normalUV).xyz - vec3(.5));
-    //   s.normal =
-    //     (nmmp.x * pbrParams.w) * normalize(v_tangent) +
-    //     (nmmp.y * pbrParams.w) * normalize(v_bitangent) +
-    //     nmmp.z * normalize(s.normal);
+    s.normal = v_normal;
+    #if USE_NORMAL_MAP
+      vec2 normalUV = v_uv * normalTile;
+      vec2 moveUV = normalUV + normalSpeed * cc_time.x / 40.;
+      vec3 nmmp = normalBlend(texture(normalMap, moveUV).xyz - vec3(.5), texture(normalMap, normalUV).xyz - vec3(.5));
+      s.normal =
+        (nmmp.x * pbrParams.w) * normalize(v_tangent) +
+        (nmmp.y * pbrParams.w) * normalize(v_bitangent) +
+        nmmp.z * normalize(s.normal);
+    #endif
+
+    s.position = v_position;
+
+    vec4 pbr = pbrParams;
+    // #if USE_PBR_MAP
+    //   vec4 res = texture(pbrMap, PBR_UV);
+    //   pbr.x *= res.OCCLUSION_CHANNEL;
+    //   pbr.y *= res.ROUGHNESS_CHANNEL;
+    //   pbr.z *= res.METALLIC_CHANNEL;
     // #endif
-
-    // s.position = v_position;
-
-    // vec4 pbr = pbrParams;
-    // // #if USE_PBR_MAP
-    // //   vec4 res = texture(pbrMap, PBR_UV);
-    // //   pbr.x *= res.OCCLUSION_CHANNEL;
-    // //   pbr.y *= res.ROUGHNESS_CHANNEL;
-    // //   pbr.z *= res.METALLIC_CHANNEL;
-    // // #endif
-    // // #if USE_METALLIC_ROUGHNESS_MAP
-    // //   vec4 metallicRoughness = texture(metallicRoughnessMap, METALLIC_ROUGHNESS_UV);
-    // //   pbr.z *= metallicRoughness.METALLIC_CHANNEL;
-    // //   pbr.y *= metallicRoughness.ROUGHNESS_CHANNEL;
-    // // #endif
-    // // #if USE_OCCLUSION_MAP
-    // //   pbr.x *= texture(occlusionMap, OCCLUSION_UV).OCCLUSION_CHANNEL;
-    // // #endif
-    // s.occlusion = clamp(pbr.x, 0.0, 0.96);
-    // s.roughness = clamp(pbr.y, 0.04, 1.0);
-    // s.metallic = pbr.z;
+    // #if USE_METALLIC_ROUGHNESS_MAP
+    //   vec4 metallicRoughness = texture(metallicRoughnessMap, METALLIC_ROUGHNESS_UV);
+    //   pbr.z *= metallicRoughness.METALLIC_CHANNEL;
+    //   pbr.y *= metallicRoughness.ROUGHNESS_CHANNEL;
+    // #endif
+    // #if USE_OCCLUSION_MAP
+    //   pbr.x *= texture(occlusionMap, OCCLUSION_UV).OCCLUSION_CHANNEL;
+    // #endif
+    s.occlusion = clamp(pbr.x, 0.0, 0.96);
+    s.roughness = clamp(pbr.y, 0.04, 1.0);
+    s.metallic = pbr.z;
 
     // s.emissive = emissive.rgb * emissiveScaleParam.xyz;
     // #if USE_EMISSIVE_MAP
@@ -251,7 +408,8 @@ CCProgram standard-fs %{
 
   vec4 frag () {
     StandardSurface s; surf(s);
-    vec4 color = s.albedo;//CCStandardShading(s);
+    vec4 color = CCStandardShading(s);
+    // vec4 color = s.albedo;
 
     // #if USE_LIGHTMAP && !USE_BATCHING && !USE_INSTANCING
     //   vec4 lighting = texture(cc_lightingMap, v_luv);

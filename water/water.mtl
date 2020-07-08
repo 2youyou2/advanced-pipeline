@@ -9,7 +9,9 @@
   "_techIdx": 1,
   "_defines": [
     {
-      "USE_NORMAL_MAP": true
+      "USE_NORMAL_MAP": true,
+      "USE_WAVE": true,
+      "USE_FOAM": true
     }
   ],
   "_states": [
@@ -27,16 +29,44 @@
     {
       "mainColor": {
         "__type__": "cc.Color",
-        "r": 26,
-        "g": 118,
-        "b": 158,
-        "a": 255
+        "r": 2,
+        "g": 17,
+        "b": 27,
+        "a": 0
       },
+      "metallic": 0,
       "normalStrenth": 0.5,
       "normalMap": {
         "__uuid__": "82e9a463-dd11-4f1d-9cab-763ef20b9c22@6c48a"
       },
-      "normalTile": 3
+      "normalTile": 3,
+      "depthDistance": 2.4,
+      "shallowColor": {
+        "__type__": "cc.Color",
+        "r": 109,
+        "g": 104,
+        "b": 104,
+        "a": 56
+      },
+      "deepColor": {
+        "__type__": "cc.Color",
+        "r": 3,
+        "g": 5,
+        "b": 39,
+        "a": 225
+      },
+      "foamCutOff": 0.5,
+      "foamDepth": 0.3,
+      "foamColor": {
+        "__type__": "cc.Color",
+        "r": 130,
+        "g": 175,
+        "b": 195,
+        "a": 255
+      },
+      "foamTexture": {
+        "__uuid__": "d353a211-064a-4253-ac5a-01cb7d8b3ad6@6c48a"
+      }
     }
   ]
 }

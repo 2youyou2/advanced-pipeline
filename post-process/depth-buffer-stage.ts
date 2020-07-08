@@ -63,13 +63,15 @@ export class DepthBufferStage extends RenderStage {
 
     render (view: RenderView) {
         const camera = view.camera!;
-        let depthComponent = camera.node.getComponent(DepthBufferComponent);
-        if (!depthComponent || !depthComponent.enabled) {
-            return;
+        if (!CC_EDITOR) {
+            let depthComponent = camera.node.getComponent(DepthBufferComponent);
+            if (!depthComponent || !depthComponent.enabled) {
+                return;
+            }
         }
 
         if (!this._depthBuffer) {
-            this._depthBuffer = createFrameBuffer(this._pipeline, this._device);
+            this._depthBuffer = createFrameBuffer(this._pipeline, this._device, true);
         }
 
         this.sortRenderQueue();
@@ -102,6 +104,14 @@ export class DepthBufferStage extends RenderStage {
         this._device!.queue.submit(_bufs);
     }
 
-    resize (width: number, height: number) { }
-    rebuild () { }
+    resize (width: number, height: number) { 
+        this.rebuild();
+    }
+    rebuild () {
+        if (!this._depthBuffer) {
+            return;
+        } 
+        this._depthBuffer.destroy();
+        this._depthBuffer = null;
+    }
 }

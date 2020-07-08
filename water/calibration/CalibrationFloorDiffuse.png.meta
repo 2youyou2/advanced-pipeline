@@ -2,19 +2,16 @@
   "ver": "1.0.18",
   "importer": "image",
   "imported": true,
-  "uuid": "2e63dd87-468d-4161-9df0-b426cf7520de",
+  "uuid": "8ee2b3cb-3584-498c-b287-46716c2efdbc",
   "files": [
-    ".jpg",
+    ".png",
     ".json"
   ],
   "subMetas": {
-    "3c318": {
-      "importer": "texture",
-      "uuid": "2e63dd87-468d-4161-9df0-b426cf7520de@3c318",
-      "displayName": "normals",
-      "id": "3c318",
-      "name": "normalMap",
+    "6c48a": {
       "ver": "1.0.19",
+      "importer": "texture",
+      "uuid": "8ee2b3cb-3584-498c-b287-46716c2efdbc@6c48a",
       "imported": true,
       "files": [
         ".json"
@@ -29,12 +26,15 @@
         "premultiplyAlpha": false,
         "anisotropy": 1,
         "isUuid": true,
-        "imageUuidOrDatabaseUri": "2e63dd87-468d-4161-9df0-b426cf7520de"
-      }
+        "imageUuidOrDatabaseUri": "8ee2b3cb-3584-498c-b287-46716c2efdbc"
+      },
+      "displayName": "CalibrationFloorDiffuse",
+      "id": "6c48a",
+      "name": "texture"
     }
   },
   "userData": {
-    "type": "normal map",
-    "redirect": "2e63dd87-468d-4161-9df0-b426cf7520de@3c318"
+    "type": "texture",
+    "redirect": "8ee2b3cb-3584-498c-b287-46716c2efdbc@6c48a"
   }
 }
