@@ -7,38 +7,44 @@ CCEffect %{
     - vert: standard-vs:vert
       frag: standard-fs:frag
       properties: &props
-        # tilingOffset:   { value: [1.0, 1.0, 0.0, 0.0] }
         mainColor:      { value: [1.0, 1.0, 1.0, 1.0], target: albedo, editor: { displayName: Albedo, type: color } }
-        # albedoScale:    { value: [1.0, 1.0, 1.0], target: albedoScaleAndCutoff.xyz }
-        # alphaThreshold: { value: 0.5, target: albedoScaleAndCutoff.w, editor: { parent: USE_ALPHA_TEST } }
+        
         occlusion:      { value: 1.0, target: pbrParams.x }
         roughness:      { value: 0.1, target: pbrParams.y }
-        metallic:       { value: 0.6, target: pbrParams.z }
-        normalStrenth:  { value: 1.0, target: pbrParams.w, editor: { parent: USE_NORMAL_MAP } }
-        # emissive:       { value: [0.0, 0.0, 0.0, 1.0], editor: { type: color } }
-        # emissiveScale:  { value: [1.0, 1.0, 1.0], target: emissiveScaleParam.xyz }
-        # mainTexture:    { value: grey, target: albedoMap, editor: { displayName: AlbedoMap } }
-        normalMap:      { value: normal       }
-        normalTile:     { value: 1 }
-        # pbrMap:         { value: grey         }
-        # metallicRoughnessMap: { value: grey   }
-        # occlusionMap:   { value: white        }
-        # emissiveMap:    { value: grey         }
+        metallic:       { value: 0, target: pbrParams.z }
         
-        normalSpeed: { value: [ 1, 0 ] }
+        normalStrenth:  { value: 1.0, target: pbrParams.w, editor: { parent: USE_NORMAL_MAP } }
+        normalMap:      { value: normal, editor: { parent: USE_NORMAL_MAP } }
+        normalTile:     { value: 1, editor: { parent: USE_NORMAL_MAP } }
+        normalSpeed:    { value: [ 1, 0 ], editor: { parent: USE_NORMAL_MAP } }
 
-        depthDistance: { value: 1. }
-        shallowColor: { value: [1, 1, 1, 1], editor: { type: color }  }
-        deepColor: { value: [0, 0, 0, 0] , editor: { type: color } }
+        depthDistance:  { value: 1. }
+        shallowColor:   { value: [1, 1, 1, 1], editor: { type: color }  }
+        deepColor:      { value: [0, 0, 0, 0] , editor: { type: color } }
 
-        foamCutOff: { value: 0.2, editor: { parent: USE_FOAM } }
-        foamDepth: { value: 0.2, editor: { parent: USE_FOAM } }
-        foamDistortion: { value: 1.222, editor: { parent: USE_FOAM } }
-        foamColor: { value: [1, 1, 1, 1], editor: { parent: USE_FOAM, type: color } }
-        foamTexture: { value: white, editor: { parent: USE_FOAM } }
+        foamScale1:      { value: [1, 1], target: foamParams2.xy, editor: { parent: USE_FOAM_1 } }
+        foamColor1:      { value: [1, 1, 1, 1], editor: { parent: USE_FOAM_1, type: color } }
 
-        waveVisuals: { value: [ 0.167, 7, 0.54, 1 ], editor: { parent: USE_WAVE } }
+        foamScale2:      { value: [1, 1], target: foamParams2.zw, editor: { parent: USE_FOAM_2 } }
+        foamColor2:      { value: [1, 1, 1, 1], editor: { parent: USE_FOAM_2, type: color } }
+
+        foamCutOff:     { value: 0.5, target: foamParams.x, editor: { parent: USE_FOAM } }
+        foamDepth:      { value: 0.3, target: foamParams.y, editor: { parent: USE_FOAM } }
+        foamDistortion: { value: 1.222, target: foamParams.z, editor: { parent: USE_FOAM } }
+        foamFade:       { value: 1, target: foamParams.w, editor: { parent: USE_FOAM } }
+        foamTexture:    { value: white, editor: { parent: USE_FOAM } }
+
+        waveVisuals:    { value: [ 0.167, 7, 0.54, 1 ], editor: { parent: USE_WAVE } }
         waveDirections: { value: [ 0, 0.3, 0.6, 0.67 ], editor: { parent: USE_WAVE } }
+
+        causticStrength:    { value: 0.98,  target: causticParams1.x, editor: { parent: USE_CAUSTIC } }
+        causticScale:       { value: 2.33,  target: causticParams1.y, editor: { parent: USE_CAUSTIC } }
+        causticSpeed:       { value: 0.1,   target: causticParams1.z, editor: { parent: USE_CAUSTIC } }
+        causticRGBSplit:    { value: 0.35,  target: causticParams1.w, editor: { parent: USE_CAUSTIC } }
+        causticMinStrength: { value: 0.05,  target: causticParams2.x, editor: { parent: USE_CAUSTIC } }
+        causticColor:       { value: [1, 1, 1],   target: causticParams2.yzw, editor: { parent: USE_CAUSTIC, type: color } }
+        causticTexture:     { value: white, editor: { parent: USE_CAUSTIC } }
+
   - name: transparent
     passes:
     - vert: standard-vs:vert
@@ -56,6 +62,8 @@ CCEffect %{
 }%
 
 CCProgram shared-ubos %{
+  #define pi 3.14
+
   uniform Constants {
     // vec4 tilingOffset;
     vec4 albedo;
@@ -72,11 +80,13 @@ CCProgram shared-ubos %{
     vec4 deepColor;
     vec4 waveVisuals;
     vec4 waveDirections;
-    vec4 foamColor;
+    vec4 foamParams;
+    vec4 foamParams2;
+    vec4 foamColor1;
+    vec4 foamColor2;
+    vec4 causticParams1;
+    vec4 causticParams2;
     float depthDistance;
-    float foamCutOff;
-    float foamDepth;
-    float foamDistortion;
   };
 }%
 
@@ -103,12 +113,7 @@ CCProgram standard-vs %{
   in vec2 a_texCoord;
   out vec2 v_uv;
   in vec2 a_texCoord1;
-  out vec2 v_uv1;
-  // #if USE_LIGHTMAP && !USE_BATCHING && !USE_INSTANCING
-  //   out vec2 v_luv;
-  // #endif
 
-  #define pi 3.14
 
   mat3 transpose(mat3 m) {
     return mat3(m[0][0], m[1][0], m[2][0],
@@ -192,19 +197,11 @@ CCProgram standard-vs %{
       #endif
     #endif
 
-    v_uv = a_texCoord;// * tilingOffset.xy + tilingOffset.zw;
-    // #if HAS_SECOND_UV
-    //   v_uv1 = a_texCoord1 * tilingOffset.xy + tilingOffset.zw;
-    // #endif
-
+    v_uv = a_texCoord;
+    
     // #if USE_VERTEX_COLOR
     //   v_color = a_color;
     // #endif
-    // #if USE_LIGHTMAP && HAS_SECOND_UV && !USE_BATCHING && !USE_INSTANCING
-    //   v_luv = cc_lightingMapUVParam.xy + a_texCoord1 * cc_lightingMapUVParam.zw;
-    // #endif
-
-
 
     return v_projPos;
   }
@@ -223,7 +220,6 @@ CCProgram standard-fs %{
   in vec3 v_position;
   in vec4 v_projPos;
   in vec2 v_uv;
-  in vec2 v_uv1;
   in vec3 v_normal;
 
   uniform sampler2D depthTexture;
@@ -232,49 +228,19 @@ CCProgram standard-fs %{
   uniform sampler2D foamTexture;
   #endif
 
+  #if USE_CAUSTIC
+  uniform sampler2D causticTexture;
+  #endif
+
   // #if USE_VERTEX_COLOR
   //   in vec3 v_color;
   // #endif
 
-  // #if USE_ALBEDO_MAP
-  //   uniform sampler2D albedoMap;
-  //   #pragma define ALBEDO_UV options([v_uv, v_uv1])
-  // #endif
   #if USE_NORMAL_MAP
     in vec3 v_tangent;
     in vec3 v_bitangent;
     uniform sampler2D normalMap;
-    #pragma define NORMAL_UV options([v_uv, v_uv1])
   #endif
-  // #if USE_PBR_MAP
-  //   uniform sampler2D pbrMap;
-  //   #pragma define PBR_UV options([v_uv, v_uv1])
-  // #endif
-  // #if USE_METALLIC_ROUGHNESS_MAP
-  //   uniform sampler2D metallicRoughnessMap;
-  //   #pragma define METALLIC_ROUGHNESS_UV options([v_uv, v_uv1])
-  // #endif
-  // #if USE_OCCLUSION_MAP
-  //   uniform sampler2D occlusionMap;
-  //   #pragma define OCCLUSION_UV options([v_uv, v_uv1])
-  // #endif
-  // #if USE_EMISSIVE_MAP
-  //   uniform sampler2D emissiveMap;
-  //   #pragma define EMISSIVE_UV options([v_uv, v_uv1])
-  // #endif
-  // #if USE_LIGHTMAP
-  //   in vec2 v_luv;
-  //   #pragma builtin(local)
-  //   layout(binding = 30) uniform sampler2D cc_lightingMap;
-  // #endif
-
-  // #pragma define OCCLUSION_CHANNEL options([r, g, b])
-  // #pragma define ROUGHNESS_CHANNEL options([g, b, r])
-  // #pragma define METALLIC_CHANNEL  options([b, r, g])
-  // #if USE_ALPHA_TEST
-  //   #pragma define ALPHA_TEST_CHANNEL options([a, r])
-  // #endif
-
 
   vec3 normalBlend(vec3 A, vec3 B)
   {
@@ -294,6 +260,8 @@ CCProgram standard-fs %{
       return uv;
   }
 
+
+  //  foam
   void foamUVs(vec2 uv, vec4 movement, vec2 offset, vec2 scale, float depth, out vec4 shoreline, out vec4 custom)
   {
       float direction1 = movement.x;
@@ -311,11 +279,63 @@ CCProgram standard-fs %{
       custom.zw = Panner(uv, direction2, speed2, offset, 1/scale2);
   }
 
-  void foamSampling(vec4 uvs, float cutoff, float distortion, Texture2D tex, out float primary, out float secondary)
+  void foamSampling(vec4 uvs, float cutoff, float distortion, sampler2D tex, out float primary, out float secondary)
   {
       primary   = clamp(step(cutoff, texture(tex, distort(uvs.xy, distortion)).r), 0., 1.);
       secondary = clamp(step(cutoff, texture(tex, distort(uvs.zw, distortion)).g), 0., 1.);
   }
+
+  vec4 foam (vec2 foamScale, vec4 foamColor) {
+    float foamCutOff = foamParams.x;
+    float foamDistortion = foamParams.z;
+
+    vec2 foamUv = distort(v_position.xz, foamDistortion);
+    foamUv.x += cc_time.x * 0.1;
+    float foamValue = texture(foamTexture, foamUv * foamScale ).r;
+    foamValue = clamp(step(foamCutOff, foamValue), 0., 1.);
+    return vec4(foamValue) * foamColor;
+  }
+
+
+  // caustics
+
+  #if USE_CAUSTIC
+  vec2 panner(vec2 uv, float direction, float speed, vec2 offset, float tiling)
+  {
+      direction = direction * 2. - 1.;
+      vec2 dir = normalize(vec2(cos(pi * direction), sin(pi * direction)));
+      return  (dir * cc_time.x * speed) + offset + (uv * tiling);
+  }
+
+  vec3 rgbSplit(float split, sampler2D tex, vec2 uv)
+  {
+      vec2 UVR = uv + vec2(split, split);
+      vec2 UVG = uv + vec2(split, -split);
+      vec2 UVB = uv + vec2(-split, -split);
+
+      float r = texture(tex, UVR).r;
+      float g = texture(tex, UVG).g;
+      float b = texture(tex, UVB).b;
+
+      return vec3(r,g,b);
+  }
+
+  vec3 caustic()
+  {
+    vec2 uv = v_position.xz;
+
+    float strength = causticParams1.x;
+    float split = causticParams1.w * 0.01;
+    float speed = causticParams1.z;
+    float scale = causticParams1.y;
+
+    vec3 texture_1 = rgbSplit(split, causticTexture, panner(uv, 1., speed, vec2(0.,0.), 1./scale));
+    vec3 texture_2 = rgbSplit(split, causticTexture, panner(uv, 1., speed, vec2(0.,0.), -1./scale));
+    vec3 texture_combined = min(texture_1, texture_2);
+
+    return strength * 10. * texture_combined;
+  }
+  #endif
 
   void surf (out StandardSurface s) {
     vec4 baseColor = albedo;
@@ -329,44 +349,49 @@ CCProgram standard-fs %{
     #endif
     float waterDepth = v_projPos.z;
     float depth = clamp((sceneDepth - waterDepth) / depthDistance, 0., 1.);
-    // float depth = clamp(sceneDepth / depthDistance, 0., 1.);
-
     baseColor += mix(shallowColor, deepColor, depth);
-    // baseColor = vec4(depth);
     
     // foam
-    #if USE_FOAM
-      vec2 foamUv = distort(v_position.xz, foamDistortion);
-      float foamValue = texture(foamTexture, foamUv * 4.).r;
-      foamValue = clamp(step(foamCutOff, foamValue), 0., 1.);
-      vec4 finalFoamColor = vec4(foamValue) * foamColor;
 
-      baseColor = mix(baseColor, finalFoamColor,  step(0., foamDepth - depth));
+    #if USE_FOAM && (USE_FOAM_1 || USE_FOAM_2)
+      vec4 finalFoamColor = vec4(0.);
+      
+      float foamDepth = foamParams.y;
+      float foamFade = foamParams.w;
+
+      #if USE_FOAM_1
+      finalFoamColor += foam(foamParams2.xy, foamColor1);
+      #endif
+      #if USE_FOAM_2
+      finalFoamColor += foam(foamParams2.zw, foamColor2);
+      #endif
+      
+      finalFoamColor *= (1. - depth / foamDepth) * foamFade;
+
+      // baseColor = mix(baseColor, finalFoamColor,  step(0., foamDepth - depth));
+      baseColor += step(0., foamDepth - depth) * finalFoamColor;
     #endif
 
 
-    // if (depth > foamCutOff) {
-    //   baseColor = foamColor;
-    // }
-    // else {
-    //   baseColor += depth * vec4(1.0);
-    // }
+    // caustic
+
+    #if USE_CAUSTIC
+      vec3 finalCausticColor = caustic();
+     
+      float causticMinStrength = causticParams2.x;
+      vec3 causticColor = causticParams2.xyz;
+
+      finalCausticColor *= clamp((1.- depth), 0., 1.) + causticMinStrength;
+      finalCausticColor *= causticColor;
+
+      baseColor.rgb += finalCausticColor;
+    #endif
 
     // #if USE_VERTEX_COLOR
     //   baseColor.rgb *= v_color;
     // #endif
-    // #if USE_ALBEDO_MAP
-    //   vec4 texColor = texture(albedoMap, ALBEDO_UV);
-    //   texColor.rgb = SRGBToLinear(texColor.rgb);
-    //   baseColor *= texColor;
-    // #endif
+
     s.albedo = baseColor;
-    // s.albedo.rgb *= albedoScaleAndCutoff.xyz;
-
-    // #if USE_ALPHA_TEST
-    //   if (s.albedo.ALPHA_TEST_CHANNEL < albedoScaleAndCutoff.w) discard;
-    // #endif
-
 
     s.normal = v_normal;
     #if USE_NORMAL_MAP
@@ -382,48 +407,14 @@ CCProgram standard-fs %{
     s.position = v_position;
 
     vec4 pbr = pbrParams;
-    // #if USE_PBR_MAP
-    //   vec4 res = texture(pbrMap, PBR_UV);
-    //   pbr.x *= res.OCCLUSION_CHANNEL;
-    //   pbr.y *= res.ROUGHNESS_CHANNEL;
-    //   pbr.z *= res.METALLIC_CHANNEL;
-    // #endif
-    // #if USE_METALLIC_ROUGHNESS_MAP
-    //   vec4 metallicRoughness = texture(metallicRoughnessMap, METALLIC_ROUGHNESS_UV);
-    //   pbr.z *= metallicRoughness.METALLIC_CHANNEL;
-    //   pbr.y *= metallicRoughness.ROUGHNESS_CHANNEL;
-    // #endif
-    // #if USE_OCCLUSION_MAP
-    //   pbr.x *= texture(occlusionMap, OCCLUSION_UV).OCCLUSION_CHANNEL;
-    // #endif
     s.occlusion = clamp(pbr.x, 0.0, 0.96);
     s.roughness = clamp(pbr.y, 0.04, 1.0);
     s.metallic = pbr.z;
-
-    // s.emissive = emissive.rgb * emissiveScaleParam.xyz;
-    // #if USE_EMISSIVE_MAP
-    //   s.emissive *= SRGBToLinear(texture(emissiveMap, EMISSIVE_UV).rgb);
-    // #endif
   }
 
   vec4 frag () {
     StandardSurface s; surf(s);
     vec4 color = CCStandardShading(s);
-    // vec4 color = s.albedo;
-
-    // #if USE_LIGHTMAP && !USE_BATCHING && !USE_INSTANCING
-    //   vec4 lighting = texture(cc_lightingMap, v_luv);
-
-    //   float fAmb = 0.5 - s.normal.y * 0.5;
-    //   vec3 ambDiff = mix(cc_ambientSky.rgb, cc_ambientGround.rgb, fAmb) * cc_ambientSky.w;
-
-    //   vec3 finalColor = (ambDiff.rgb * s.albedo.rgb);
-    //   finalColor += lighting.rgb *  s.albedo.rgb;
-    //   finalColor = finalColor * s.occlusion;
-    //   finalColor += s.emissive;
-
-    //   color.rgb = lighting.a * finalColor + (1.0 - lighting.a) * color.rgb;
-    // #endif
 
     return CCFragOutput(color);
   }
