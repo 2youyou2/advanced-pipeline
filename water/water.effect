@@ -251,6 +251,7 @@ CCProgram standard-fs %{
 
 
   //  foam
+  #if USE_FOAM
   void foamUVs(vec2 uv, vec4 movement, vec2 offset, vec2 scale, float depth, out vec4 shoreline, out vec4 custom)
   {
       float direction1 = movement.x;
@@ -284,6 +285,7 @@ CCProgram standard-fs %{
     foamValue = clamp(step(foamCutOff, foamValue), 0., 1.);
     return vec4(foamValue) * foamColor;
   }
+  #endif
 
 
   // caustics
