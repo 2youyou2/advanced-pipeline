@@ -3,6 +3,7 @@
 Shader Lib is a Cocos Creator 3D (based on v1.1.1) Plugin that provide various shader.
 
 Online Demo : http://2youyou2.com/shader-lib-examples/
+
 Example repo : https://github.com/2youyou2/shader-lib-examples
 
 # water
