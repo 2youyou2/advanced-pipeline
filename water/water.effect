@@ -117,36 +117,36 @@ CCProgram standard-vs %{
 
   mat3 transpose(mat3 m) {
     return mat3(m[0][0], m[1][0], m[2][0],
-                m[0][1], m[1][1], m[2][1],
-                m[0][2], m[1][2], m[2][2]);
+      m[0][1], m[1][1], m[2][1],
+      m[0][2], m[1][2], m[2][2]);
   }
 
   vec3 gerstner(vec3 position, float steepness, float wavelength, float speed, float direction, inout vec3 tangent, inout vec3 binormal)
   {
-      direction = direction * 2. - 1.;
-      vec2 d = normalize(vec2(cos(pi * direction), sin(pi * direction)));
-      float s = steepness;
-      float k = 2. * pi / wavelength;                                                      
-      float f = k * (dot(d, position.xz) - speed * cc_time.x);
-      float a = s / k;
+    direction = direction * 2. - 1.;
+    vec2 d = normalize(vec2(cos(pi * direction), sin(pi * direction)));
+    float s = steepness;
+    float k = 2. * pi / wavelength;                                                      
+    float f = k * (dot(d, position.xz) - speed * cc_time.x);
+    float a = s / k;
 
-      tangent += vec3(
+    tangent += vec3(
       -d.x * d.x * s * sin(f),
       d.x * s * cos(f), 
       -d.x * d.y * s * sin(f)
-      );
+    );
 
-      binormal += vec3(
+    binormal += vec3(
       -d.x * d.y * s * sin(f),
       d.y * s * cos(f),
       -d.y * d.y * s * sin(f)
-      );
+    );
 
-      return vec3(
+    return vec3(
       d.x * a * cos(f),
       a * sin(f),
       d.y * a * cos(f)
-      );
+    );
   }
 
 
