@@ -2,18 +2,18 @@
   "ver": "1.0.18",
   "importer": "image",
   "imported": true,
-  "uuid": "d353a211-064a-4253-ac5a-01cb7d8b3ad6",
+  "uuid": "0b54a86e-28e8-454f-8adc-94433fa0b741",
   "files": [
-    ".png",
+    ".jpg",
     ".json"
   ],
   "subMetas": {
-    "6c48a": {
+    "3c318": {
       "importer": "texture",
-      "uuid": "d353a211-064a-4253-ac5a-01cb7d8b3ad6@6c48a",
-      "displayName": "Foam 4",
-      "id": "6c48a",
-      "name": "texture",
+      "uuid": "0b54a86e-28e8-454f-8adc-94433fa0b741@3c318",
+      "displayName": "normals",
+      "id": "3c318",
+      "name": "normalMap",
       "ver": "1.0.19",
       "imported": true,
       "files": [
@@ -29,12 +29,12 @@
         "premultiplyAlpha": false,
         "anisotropy": 1,
         "isUuid": true,
-        "imageUuidOrDatabaseUri": "d353a211-064a-4253-ac5a-01cb7d8b3ad6"
+        "imageUuidOrDatabaseUri": "2e63dd87-468d-4161-9df0-b426cf7520de"
       }
     }
   },
   "userData": {
-    "type": "texture",
-    "redirect": "d353a211-064a-4253-ac5a-01cb7d8b3ad6@6c48a"
+    "type": "normal map",
+    "redirect": "0b54a86e-28e8-454f-8adc-94433fa0b741@3c318"
   }
 }
