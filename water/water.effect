@@ -13,20 +13,20 @@ CCEffect %{
         roughness:      { value: 0.1, target: pbrParams.y }
         metallic:       { value: 0, target: pbrParams.z }
         
-        normalStrenth:  { value: 1.0, target: pbrParams.w, editor: { parent: USE_NORMAL_MAP } }
+        normalStrenth:  { value: 0.5, target: normalParams.x, editor: { parent: USE_NORMAL_MAP } }
+        normalTile:     { value: 1, target: normalParams.y, editor: { parent: USE_NORMAL_MAP } }
+        normalSpeed:    { value: [ 1, 0 ], target: normalParams.zw , editor: { parent: USE_NORMAL_MAP } }
         normalMap:      { value: normal, editor: { parent: USE_NORMAL_MAP } }
-        normalTile:     { value: 1, editor: { parent: USE_NORMAL_MAP } }
-        normalSpeed:    { value: [ 1, 0 ], editor: { parent: USE_NORMAL_MAP } }
 
         depthDistance:  { value: 1. }
         shallowColor:   { value: [1, 1, 1, 1], editor: { type: color }  }
         deepColor:      { value: [0, 0, 0, 0] , editor: { type: color } }
 
-        foamScale1:      { value: [1, 1], target: foamParams2.xy, editor: { parent: USE_FOAM_1 } }
-        foamColor1:      { value: [1, 1, 1, 1], editor: { parent: USE_FOAM_1, type: color } }
+        foamScale1:     { value: [1, 1], target: foamParams2.xy, editor: { parent: USE_FOAM_1 } }
+        foamColor1:     { value: [1, 1, 1, 1], editor: { parent: USE_FOAM_1, type: color } }
 
-        foamScale2:      { value: [1, 1], target: foamParams2.zw, editor: { parent: USE_FOAM_2 } }
-        foamColor2:      { value: [1, 1, 1, 1], editor: { parent: USE_FOAM_2, type: color } }
+        foamScale2:     { value: [1, 1], target: foamParams2.zw, editor: { parent: USE_FOAM_2 } }
+        foamColor2:     { value: [1, 1, 1, 1], editor: { parent: USE_FOAM_2, type: color } }
 
         foamCutOff:     { value: 0.5, target: foamParams.x, editor: { parent: USE_FOAM } }
         foamDepth:      { value: 0.3, target: foamParams.y, editor: { parent: USE_FOAM } }
@@ -65,17 +65,14 @@ CCProgram shared-ubos %{
   #define pi 3.14
 
   uniform Constants {
-    // vec4 tilingOffset;
     vec4 albedo;
-    // vec4 albedoScaleAndCutoff;
     vec4 pbrParams;
     vec4 emissive;
     vec4 emissiveScaleParam;
-    vec2 normalSpeed;
-    float normalTile;
   };
 
   uniform Water {
+    vec4 normalParams;
     vec4 shallowColor;
     vec4 deepColor;
     vec4 waveVisuals;
@@ -113,13 +110,6 @@ CCProgram standard-vs %{
   in vec2 a_texCoord;
   out vec2 v_uv;
   in vec2 a_texCoord1;
-
-
-  mat3 transpose(mat3 m) {
-    return mat3(m[0][0], m[1][0], m[2][0],
-      m[0][1], m[1][1], m[2][1],
-      m[0][2], m[1][2], m[2][2]);
-  }
 
   vec3 gerstner(vec3 position, float steepness, float wavelength, float speed, float direction, inout vec3 tangent, inout vec3 binormal)
   {
@@ -166,7 +156,6 @@ CCProgram standard-vs %{
       offset += gerstner(p, steepness, wavelength, speed, directions.w, tangent, binormal);
 
       normal = normalize(cross(binormal, tangent));
-      // TBN = transpose(mat3(tangent, binormal, normal));
       T = tangent;
       B = binormal;
   }
@@ -329,11 +318,11 @@ CCProgram standard-fs %{
     float speed = causticParams1.z;
     float scale = causticParams1.y;
 
-    vec3 texture_1 = rgbSplit(split, causticTexture, panner(uv, 1., speed, vec2(0.,0.), 1./scale));
-    vec3 texture_2 = rgbSplit(split, causticTexture, panner(uv, 1., speed, vec2(0.,0.), -1./scale));
-    vec3 texture_combined = min(texture_1, texture_2);
+    vec3 texture1 = rgbSplit(split, causticTexture, panner(uv, 1., speed, vec2(0., 0.), 1./scale));
+    vec3 texture2 = rgbSplit(split, causticTexture, panner(uv, 1., speed, vec2(0., 0.), -1./scale));
+    vec3 textureCombined = min(texture1, texture2);
 
-    return strength * 10. * texture_combined;
+    return strength * 10. * textureCombined;
   }
   #endif
 
@@ -395,12 +384,13 @@ CCProgram standard-fs %{
 
     s.normal = v_normal;
     #if USE_NORMAL_MAP
-      vec2 normalUV = v_uv * normalTile;
-      vec2 moveUV = normalUV + normalSpeed * cc_time.x / 40.;
+      float normalStrenth = normalParams.x;
+      vec2 normalUV = v_uv * normalParams.y;
+      vec2 moveUV = normalUV + normalParams.zw * cc_time.x / 40.;
       vec3 nmmp = normalBlend(texture(normalMap, moveUV).xyz - vec3(.5), texture(normalMap, normalUV).xyz - vec3(.5));
       s.normal =
-        (nmmp.x * pbrParams.w) * normalize(v_tangent) +
-        (nmmp.y * pbrParams.w) * normalize(v_bitangent) +
+        (nmmp.x * normalStrenth) * normalize(v_tangent) +
+        (nmmp.y * normalStrenth) * normalize(v_bitangent) +
         nmmp.z * normalize(s.normal);
     #endif
 
