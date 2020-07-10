@@ -1,6 +1,7 @@
 import { _decorator, Component, Node, RenderStage, RenderFlow, RenderView, renderer, GFXClearFlag, GFXPipelineState, GFXCommandBuffer, GFXTextureType, GFXTextureUsageBit, GFXTextureViewType, GFXFormat, Vec2, GFXFramebuffer, GFXTexture, GFXTextureView, pipeline, game, director, Director, IGFXColor, ForwardStage } from "cc";
 import PostProcessCommand from "./post-process-command";
 import PostProcessRenderer from "./post-process-renderer";
+import { createFrameBuffer } from "./utils/frame-buffer";
 
 const { UBOGlobal } = pipeline;
 const { ccclass, property } = _decorator;
@@ -201,57 +202,6 @@ export class PostProcessStage extends ForwardStage {
         this.rebuild();
     }
 
-    createFrameBuffer (depth = false, SSAA = 1) {
-        // @ts-ignore
-        let pipelineAny: any = this.pipeline;
-        let shadingWidth = pipelineAny._shadingWidth * SSAA;
-        let shadingHeight = pipelineAny._shadingHeight * SSAA;
-
-        let format: GFXFormat = pipelineAny._getTextureFormat(GFXFormat.UNKNOWN, GFXTextureUsageBit.COLOR_ATTACHMENT);
-        let texture = this._device.createTexture({
-            type: GFXTextureType.TEX2D,
-            usage: GFXTextureUsageBit.COLOR_ATTACHMENT,
-            format: format,
-            width: shadingWidth,
-            height: shadingHeight,
-        })
-
-        let textureView = this._device.createTextureView({
-            texture: texture,
-            type: GFXTextureViewType.TV2D,
-            format: format,
-        })
-
-        // depth stencil
-        let depthTextureView = null;
-        if (depth) {
-            let depthFormat: GFXFormat = pipelineAny._getTextureFormat(GFXFormat.UNKNOWN, GFXTextureUsageBit.DEPTH_STENCIL_ATTACHMENT);
-
-            let depthTexture = this._device.createTexture({
-                type: GFXTextureType.TEX2D,
-                usage: GFXTextureUsageBit.DEPTH_STENCIL_ATTACHMENT,
-                format: depthFormat,
-                width: shadingWidth,
-                height: shadingHeight,
-            })
-            depthTextureView = this._device.createTextureView({
-                texture: depthTexture,
-                type: GFXTextureViewType.TV2D,
-                format: depthFormat,
-            })
-        }
-        
-
-        // framebuffer
-        let frameBuffer = this._device.createFramebuffer({
-            renderPass: pipelineAny._renderPasses.get(1),
-            colorViews: [textureView],
-            depthStencilView: depthTextureView,
-        })
-
-        return frameBuffer;
-    }
-
     _originFrameBuffer:GFXFramebuffer = null;
     rebuild () {
         this._psos.length = 0;
@@ -275,7 +225,7 @@ export class PostProcessStage extends ForwardStage {
         let pipeline = this._pipeline!;
 
         if (!this._originFrameBuffer) {
-            this._originFrameBuffer = this.createFrameBuffer(true, this.SSAA);
+            this._originFrameBuffer = createFrameBuffer(this._pipeline, this._device, true, this.SSAA);
         }
         let originFrameBuffer = this._framebuffer = this._originFrameBuffer;
 
@@ -330,7 +280,7 @@ export class PostProcessStage extends ForwardStage {
                 }
 
                 if (!flop) {
-                    flop = this.createFrameBuffer();
+                    flop = createFrameBuffer(this._pipeline, this._device);
                 }
 
                 renderCommands.push(new PostEffectRenderCommand(pass, input, flop));

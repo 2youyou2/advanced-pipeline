@@ -1,0 +1,32 @@
+precision highp float;
+#include <input-standard>
+#include <cc-global>
+#include <cc-local-batch> 
+
+out float v_depth;
+
+#if USE_ALBEDO_MAP
+in vec2 a_texCoord;
+out vec2 vTexCoord;
+#endif
+
+vec4 vert () {
+  StandardVertInput In;
+  CCVertInput(In);
+
+  mat4 matWorld, matWorldIT;
+  CCGetWorldMatrixFull(matWorld, matWorldIT);
+
+  vec4 pos = cc_matView * matWorld * In.position;
+  #if USE_FLOAT_TEXTURE
+    v_depth = -pos.z;
+  #else
+    v_depth = -pos.z / 10000.;
+  #endif
+
+  #if USE_ALBEDO_MAP
+  vTexCoord = a_texCoord;
+  #endif
+
+  return cc_matProj * pos;
+}

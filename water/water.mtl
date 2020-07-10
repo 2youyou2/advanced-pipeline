@@ -6,10 +6,15 @@
   "_effectAsset": {
     "__uuid__": "156c2533-9b3d-4780-824a-2a7b3a8b2d8c"
   },
-  "_techIdx": 0,
+  "_techIdx": 1,
   "_defines": [
     {
-      "USE_NORMAL_MAP": true
+      "USE_NORMAL_MAP": true,
+      "USE_WAVE": true,
+      "USE_FOAM": true,
+      "USE_CAUSTIC": true,
+      "USE_FOAM_1": true,
+      "USE_FOAM_2": true
     }
   ],
   "_states": [
@@ -27,16 +32,64 @@
     {
       "mainColor": {
         "__type__": "cc.Color",
-        "r": 26,
-        "g": 118,
-        "b": 158,
-        "a": 255
+        "r": 2,
+        "g": 17,
+        "b": 27,
+        "a": 0
       },
       "normalStrenth": 0.5,
       "normalMap": {
         "__uuid__": "82e9a463-dd11-4f1d-9cab-763ef20b9c22@6c48a"
       },
-      "normalTile": 3
+      "normalTile": 3,
+      "depthDistance": 2.4,
+      "shallowColor": {
+        "__type__": "cc.Color",
+        "r": 109,
+        "g": 104,
+        "b": 104,
+        "a": 56
+      },
+      "deepColor": {
+        "__type__": "cc.Color",
+        "r": 3,
+        "g": 5,
+        "b": 39,
+        "a": 225
+      },
+      "foamScale1": {
+        "__type__": "cc.Vec2",
+        "x": 2,
+        "y": 2
+      },
+      "foamColor1": {
+        "__type__": "cc.Color",
+        "r": 203,
+        "g": 141,
+        "b": 206,
+        "a": 152
+      },
+      "foamScale2": {
+        "__type__": "cc.Vec2",
+        "x": 0.5,
+        "y": 0.5
+      },
+      "foamColor2": {
+        "__type__": "cc.Color",
+        "r": 164,
+        "g": 70,
+        "b": 194,
+        "a": 74
+      },
+      "foamDistortion": 1,
+      "foamTexture": {
+        "__uuid__": "d353a211-064a-4253-ac5a-01cb7d8b3ad6@6c48a"
+      },
+      "causticStrength": 0.4,
+      "causticMinStrength": 0.06,
+      "causticTexture": {
+        "__uuid__": "04f9f064-9886-42a8-b856-4af0f3e3422a@6c48a"
+      }
     }
   ]
 }

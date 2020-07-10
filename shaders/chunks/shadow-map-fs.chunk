@@ -1,0 +1,32 @@
+precision highp float;
+#include <cc-global>
+#include <output-standard>
+#include <shading-standard>
+#include <packing>
+
+in float v_depth;
+
+#if USE_ALBEDO_MAP
+in vec2 vTexCoord;
+#endif
+
+#if USE_ALBEDO_MAP
+uniform sampler2D albedoMap;
+#pragma define ALBEDO_UV options([v_uv, v_uv1])
+#endif
+
+vec4 frag () {
+  #if ALPHAMASK
+      #if USE_ALBEDO_MAP
+      float alpha = texture(albedoMap, vTexCoord.xy).a;
+      if (alpha < 0.5)
+          discard;
+      #endif
+  #endif
+
+  #if USE_FLOAT_TEXTURE
+    return vec4(v_depth);
+  #else
+    return packDepthToRGBA(v_depth);
+  #endif
+}
