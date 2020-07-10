@@ -1,4 +1,4 @@
-import { _decorator, Component, Node, RenderStage, RenderFlow, RenderView, renderer, GFXClearFlag, GFXPipelineState, GFXCommandBuffer, GFXTextureType, GFXTextureUsageBit, GFXTextureViewType, GFXFormat, Vec2, GFXFramebuffer, GFXTexture, GFXTextureView, pipeline, game, director, Director, IGFXColor } from "cc";
+import { _decorator, Component, Node, RenderStage, RenderFlow, RenderView, renderer, GFXClearFlag, GFXPipelineState, GFXCommandBuffer, GFXTextureType, GFXTextureUsageBit, GFXTextureViewType, GFXFormat, Vec2, GFXFramebuffer, GFXTexture, GFXTextureView, pipeline, game, director, Director, IGFXColor, ForwardStage } from "cc";
 import PostProcessCommand from "./post-process-command";
 import PostProcessRenderer from "./post-process-renderer";
 
@@ -22,7 +22,7 @@ class PostEffectRenderCommand {
 const _colors: IGFXColor[] = [ { r: 0, g: 0, b: 0, a: 1 } ];
 
 @ccclass("PostProcessStage")
-export class PostProcessStage extends RenderStage {
+export class PostProcessStage extends ForwardStage {
 
     /* use `property` decorator if your want the member to be serializable */
     // @property
@@ -44,6 +44,51 @@ export class PostProcessStage extends RenderStage {
             this._cmdBuff.destroy();
             this._cmdBuff = null;
         }
+    }
+
+    public sortRenderQueue () {
+        let opaqueInstancedQueue = (this as any)._opaqueInstancedQueue;
+        let opaqueBatchedQueue = (this as any)._opaqueBatchedQueue;
+
+        opaqueInstancedQueue.clear();
+        opaqueBatchedQueue.clear();
+        this._renderQueues.forEach(this.renderQueueClearFunc);
+
+        const renderObjects = this._pipeline.renderObjects;
+        for (let i = 0; i < renderObjects.length; ++i) {
+            const ro = renderObjects[i];
+            if (ro.model.isDynamicBatching) {
+                const subModels = ro.model.subModels;
+                for (let m = 0; m < subModels.length; ++m) {
+                    const subModel = subModels[m];
+                    const passes = subModel.passes;
+                    for (let p = 0; p < passes.length; ++p) {
+                        const pass = passes[p];
+                        const pso = subModel.psos![p];
+                        if (pass.instancedBuffer) {
+                            pass.instancedBuffer.merge(subModel, ro.model.instancedAttributes, pso);
+                            opaqueInstancedQueue.queue.add(pass.instancedBuffer);
+                        } else if (pass.batchedBuffer) {
+                            pass.batchedBuffer.merge(subModel, ro, pso);
+                            opaqueBatchedQueue.queue.add(pass.batchedBuffer);
+                        } else {
+                            for (let k = 0; k < this._renderQueues.length; k++) {
+                                this._renderQueues[k].insertRenderPass(ro, m, p);
+                            }
+                        }
+                    }
+                }
+            } else {
+                for (let m = 0; m < ro.model.subModelNum; m++) {
+                    for (let p = 0; p < ro.model.getSubModel(m).passes.length; p++) {
+                        for (let k = 0; k < this._renderQueues.length; k++) {
+                            this._renderQueues[k].insertRenderPass(ro, m, p);
+                        }
+                    }
+                }
+            }
+        }
+        this._renderQueues.forEach(this.renderQueueSortFunc);
     }
 
     render (view: RenderView) {
@@ -83,6 +128,9 @@ export class PostProcessStage extends RenderStage {
         for (let i = 0; i < this._renderQueues.length; i++) {
             cmdBuff.execute(this._renderQueues[i].cmdBuffs.array, this._renderQueues[i].cmdBuffCount);
         }
+
+        (this as any)._opaqueInstancedQueue.recordCommandBuffer(cmdBuff);
+        (this as any)._opaqueBatchedQueue.recordCommandBuffer(cmdBuff);
 
         cmdBuff.endRenderPass();
 

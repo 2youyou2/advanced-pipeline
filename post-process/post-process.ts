@@ -47,7 +47,7 @@ export class PostProcess extends Component {
     start () {
         let flow = director.root.pipeline.getFlow('PostProcessFlow');
         if (flow) {
-            this._stage = flow.stages[0] as PostProcessStage;
+            this._stage = flow.stages.find(s => s instanceof PostProcessStage) as PostProcessStage;
             this._updateStage();
         }
     }
