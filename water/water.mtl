@@ -37,11 +37,11 @@
         "b": 27,
         "a": 0
       },
-      "normalStrenth": 0.5,
+      "normalStrenth": 0.4,
+      "normalTile": 0.5,
       "normalMap": {
-        "__uuid__": "82e9a463-dd11-4f1d-9cab-763ef20b9c22@6c48a"
+        "__uuid__": "d3d9e7d2-7786-4f6b-9451-64e953584b39@6c48a"
       },
-      "normalTile": 3,
       "depthDistance": 2.4,
       "shallowColor": {
         "__type__": "cc.Color",
@@ -83,12 +83,12 @@
       },
       "foamDistortion": 1,
       "foamTexture": {
-        "__uuid__": "d353a211-064a-4253-ac5a-01cb7d8b3ad6@6c48a"
+        "__uuid__": "9f77befa-3d20-4be1-bb57-e5d97c58dd37@6c48a"
       },
       "causticStrength": 0.4,
       "causticMinStrength": 0.06,
       "causticTexture": {
-        "__uuid__": "04f9f064-9886-42a8-b856-4af0f3e3422a@6c48a"
+        "__uuid__": "195062a8-5f5d-418f-99b3-f990d6712520@6c48a"
       }
     }
   ]
