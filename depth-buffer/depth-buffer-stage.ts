@@ -145,9 +145,9 @@ export class DepthBufferStage extends RenderStage {
                 return;
             }
         }
-        // else if (view.name !== "Editor Camera") {
-        //     return;
-        // }
+        else if (view.name !== "Editor Camera") {
+            return;
+        }
 
         this.switchDepthBuffer(view);
         this.updateCameraMatToUBO(camera);
