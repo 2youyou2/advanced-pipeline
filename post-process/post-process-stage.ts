@@ -1,7 +1,7 @@
 import { _decorator, Component, Node, RenderStage, RenderFlow, RenderView, renderer, GFXClearFlag, GFXPipelineState, GFXCommandBuffer, GFXTextureType, GFXTextureUsageBit, GFXTextureViewType, GFXFormat, Vec2, GFXFramebuffer, GFXTexture, GFXTextureView, pipeline, game, director, Director, IGFXColor, ForwardStage } from "cc";
 import PostProcessCommand from "./post-process-command";
 import PostProcessRenderer from "./post-process-renderer";
-import { createFrameBuffer } from "./utils/frame-buffer";
+import { createFrameBuffer } from "../utils/frame-buffer";
 
 const { UBOGlobal } = pipeline;
 const { ccclass, property } = _decorator;

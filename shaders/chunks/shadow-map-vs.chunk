@@ -3,6 +3,11 @@ precision highp float;
 #include <cc-global>
 #include <cc-local-batch> 
 
+layout(binding = 0) uniform SL_LIT_SHADOW {
+  highp mat4 sl_litShadowMatViewProj; // view matrix
+  highp vec4 sl_litShadowParams; // near, far, depth bias
+};
+
 out float v_depth;
 
 #if USE_ALBEDO_MAP
@@ -17,16 +22,16 @@ vec4 vert () {
   mat4 matWorld, matWorldIT;
   CCGetWorldMatrixFull(matWorld, matWorldIT);
 
-  vec4 pos = cc_matView * matWorld * In.position;
+  vec4 pos = sl_litShadowMatViewProj * matWorld * In.position;
   #if USE_FLOAT_TEXTURE
-    v_depth = -pos.z;
+    v_depth = pos.z;
   #else
-    v_depth = -pos.z / 10000.;
+    v_depth = pos.z / 10000.;
   #endif
 
   #if USE_ALBEDO_MAP
   vTexCoord = a_texCoord;
   #endif
 
-  return cc_matProj * pos;
+  return pos;
 }

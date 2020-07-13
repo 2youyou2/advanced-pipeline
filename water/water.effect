@@ -211,7 +211,7 @@ CCProgram standard-fs %{
   in vec2 v_uv;
   in vec3 v_normal;
 
-  uniform sampler2D depthTexture;
+  uniform sampler2D sl_depthTexture;
 
   #if USE_FOAM
   uniform sampler2D foamTexture;
@@ -334,9 +334,9 @@ CCProgram standard-fs %{
     // depth
     vec2 depthUv = (v_projPos.xy / v_projPos.w) * 0.5 + 0.5;
     #if USE_FLOAT_TEXTURE
-      float sceneDepth = texture(depthTexture, depthUv).r;
+      float sceneDepth = texture(sl_depthTexture, depthUv).r;
     #else
-      float sceneDepth = unpackRGBAToDepth(texture(depthTexture, depthUv)) * 10000.;
+      float sceneDepth = unpackRGBAToDepth(texture(sl_depthTexture, depthUv)) * 10000.;
     #endif
     float waterDepth = v_projPos.z;
     float depth = clamp((sceneDepth - waterDepth) / depthDistance, 0., 1.);

@@ -1,0 +1,4 @@
+layout(binding = 0) uniform SL_LIT_SHADOW {
+  highp mat4 sl_litShadowMatViewProj; // view matrix
+  highp vec4 sl_litShadowParams; // near, far, depth bias
+};
