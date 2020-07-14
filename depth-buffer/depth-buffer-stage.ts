@@ -20,6 +20,7 @@ type DpethBuffer = {
     binding: DepthBufferBinding
 }
 
+// TODO: only support bind one depth buffer now.
 @ccclass("DepthBufferStage")
 export class DepthBufferStage extends RenderStage {
 
@@ -55,32 +56,32 @@ export class DepthBufferStage extends RenderStage {
             for (let l = 0; l < ro.model.subModelNum; l++) {
                 for (let j = 0; j < ro.model.getSubModel(l).passes.length; j++) {
                     for (let k = 0; k < this._renderQueues.length; k++) {
-                        this._renderQueues[k].insertRenderPass(ro, l, j);
+                        let updated = false;
 
                         const subModel = ro.model.getSubModel(l);
                         const pass: renderer.Pass = subModel.passes[j];
 
-                        let updated = false;
+                        if (this._renderQueues[k].insertRenderPass(ro, l, j)) {
+                            // @ts-ignore
+                            if (!pass.binded_sl_lit_shadow) {
+                                pass.bindBuffer(UBOLitShadow.BLOCK.binding, this._currentUboBinding.buffer);
+                                updated = true;
+                                // @ts-ignore
+                                pass.binded_sl_lit_shadow = true;
+                            }
+                        }
+
+
                         // @ts-ignore
-                        // if (!pass.binded_sl_depthTexture) {
+                        if (!pass.binded_sl_depthTexture) {
                             let sampler = pass.getBinding('sl_depthTexture');
                             if (sampler) {
                                 pass.bindTextureView(sampler, depthTexture);
                                 updated = true;
                                 // @ts-ignore
-                                // pass.binded_sl_depthTexture = true;
+                                pass.binded_sl_depthTexture = true;
                             }
-                        // }
-
-                        // @ts-ignore
-                        // if (!pass.binded_SL_LIT_SHADOW) {
-                            if (pass.getBinding('sl_litShadowMatViewProj') !== undefined) {
-                                pass.bindBuffer(UBOLitShadow.BLOCK.binding, this._currentUboBinding.buffer);
-                                updated = true;
-                                // @ts-ignore
-                                // pass.binded_SL_LIT_SHADOW = true;
-                            }
-                        // }
+                        }
 
                         if (updated) {
                             pass.update();
