@@ -398,6 +398,8 @@ CCProgram standard-fs %{
 
     s.position = v_position;
 
+    s.emissive = vec3(0.);
+
     vec4 pbr = pbrParams;
     s.occlusion = clamp(pbr.x, 0.0, 0.96);
     s.roughness = clamp(pbr.y, 0.04, 1.0);
