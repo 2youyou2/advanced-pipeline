@@ -202,6 +202,12 @@ export class PostProcessStage extends ForwardStage {
         this.rebuild();
     }
 
+    clear () {
+        this._psos.length = 0;
+        this._renderers.length = 0;
+        this._renderCommands.length = 0;
+    }
+
     _originFrameBuffer:GFXFramebuffer = null;
     rebuild () {
         this._psos.length = 0;
@@ -212,7 +218,7 @@ export class PostProcessStage extends ForwardStage {
         let hasCommand = false;
         let renderers = this._renderers;
         for (let ri = 0; ri < renderers.length; ri++) {
-            let renderer = this.renderers[ri];
+            let renderer = renderers[ri];
             if (!renderer || !renderer.enabled) {
                 continue;
             }
@@ -237,7 +243,7 @@ export class PostProcessStage extends ForwardStage {
         let framebufferMap: Map<string, GFXFramebuffer> = new Map();
 
         for (let ri = 0; ri < renderers.length; ri++) {
-            let renderer = this.renderers[ri];
+            let renderer = renderers[ri];
             if (!renderer || !renderer.enabled) {
                 continue;
             }
@@ -313,7 +319,7 @@ export class PostProcessStage extends ForwardStage {
 director.on(Director.EVENT_BEFORE_SCENE_LAUNCH, () => {
     let flow = director.root.pipeline.getFlow('PostProcessFlow');
     if (flow) {
-        let stage = flow.stages[0] as PostProcessStage;
-        stage.renderers = [];
+        let stage = flow.stages.find(s => s instanceof PostProcessStage) as PostProcessStage;
+        stage.clear();
     }
 })
