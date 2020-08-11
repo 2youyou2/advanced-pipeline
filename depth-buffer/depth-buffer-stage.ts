@@ -170,7 +170,7 @@ export class DepthBufferStage extends RenderStage {
         this._renderArea!.height = camera.height;
 
         cmdBuff.beginRenderPass(framebuffer, this._renderArea!,
-            camera.clearFlag, _colors, camera.clearDepth, camera.clearStencil);
+            GFXClearFlag.DEPTH | GFXClearFlag.COLOR, _colors, camera.clearDepth, camera.clearStencil);
 
         for (let i = 0; i < this._renderQueues.length; i++) {
             cmdBuff.execute(this._renderQueues[i].cmdBuffs.array, this._renderQueues[i].cmdBuffCount);
