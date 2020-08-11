@@ -30,6 +30,8 @@ export class DepthBufferStage extends RenderStage {
     _currentDepthBuffer: GFXFramebuffer = null;
     _depthBuffers: Map<RenderView, DpethBuffer> = new Map();
 
+    _shouldRebindPass = true;
+
     public activate (flow: RenderFlow) {
         super.activate(flow);
         this.createCmdBuffer();
@@ -63,7 +65,7 @@ export class DepthBufferStage extends RenderStage {
 
                         if (this._renderQueues[k].insertRenderPass(ro, l, j)) {
                             // @ts-ignore
-                            if (!pass.binded_sl_lit_shadow) {
+                            if (!pass.binded_sl_lit_shadow || this._shouldRebindPass) {
                                 pass.bindBuffer(UBOLitShadow.BLOCK.binding, this._currentUboBinding.buffer);
                                 updated = true;
                                 // @ts-ignore
@@ -73,7 +75,7 @@ export class DepthBufferStage extends RenderStage {
 
 
                         // @ts-ignore
-                        if (!pass.binded_sl_depthTexture) {
+                        if (!pass.binded_sl_depthTexture || this._shouldRebindPass) {
                             let sampler = pass.getBinding('sl_depthTexture');
                             if (sampler) {
                                 pass.bindTextureView(sampler, depthTexture);
@@ -91,6 +93,7 @@ export class DepthBufferStage extends RenderStage {
             }
         }
 
+        this._shouldRebindPass = false;
         this._renderQueues.forEach(this.renderQueueSortFunc);
     }
 
@@ -190,5 +193,6 @@ export class DepthBufferStage extends RenderStage {
             values[1].buffer.destroy()
         }
         this._depthBuffers.clear();
+        this._shouldRebindPass = true;
     }
 }
