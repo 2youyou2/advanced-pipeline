@@ -111,20 +111,29 @@ export class PostProcessStage extends ForwardStage {
         this._renderArea!.x = vp.x * camera.width;
         this._renderArea!.y = vp.y * camera.height;
 
+        let hasRenderThings =  Number(camera.visibility) !== 0;
+
         let framebuffer = view.window!.framebuffer;
-        if (this._renderCommands.length !== 0) {
+        if (this._renderCommands.length !== 0 && hasRenderThings) {
             framebuffer = this._originFrameBuffer;
             
+            this._renderArea!.x = 0;
+            this._renderArea!.y = 0;
             this._renderArea!.width = camera.width * this.SSAA;
             this._renderArea!.height = camera.height * this.SSAA;
+
+            cmdBuff.beginRenderPass(framebuffer, this._renderArea!,
+                GFXClearFlag.ALL, [{ r: 0.0, g: 0.0, b: 0.0, a: 0.0 }], 1.0, 0);
         }
         else {
-            this._renderArea!.width = camera.width;
-            this._renderArea!.height = camera.height;
-        }
+            this._renderArea!.x = vp.x * camera.width;
+            this._renderArea!.y = vp.y * camera.height;
+            this._renderArea!.width = vp.width * camera.width;
+            this._renderArea!.height = vp.height * camera.height;
 
-        cmdBuff.beginRenderPass(framebuffer, this._renderArea!,
-            camera.clearFlag, _colors, camera.clearDepth, camera.clearStencil);
+            cmdBuff.beginRenderPass(framebuffer, this._renderArea!,
+                camera.clearFlag, _colors, camera.clearDepth, camera.clearStencil);
+        }
 
         for (let i = 0; i < this._renderQueues.length; i++) {
             cmdBuff.execute(this._renderQueues[i].cmdBuffs.array, this._renderQueues[i].cmdBuffCount);
@@ -137,21 +146,34 @@ export class PostProcessStage extends ForwardStage {
 
         // draw post process
         let commands = this._renderCommands;
-        if (commands.length !== 0) {
+        if (commands.length !== 0 && hasRenderThings) {
             let pipeline = this._pipeline!;
             let quadIA = pipeline.quadIA;
     
             for (let i = 0; i < commands.length; i++) {
-                this._renderArea!.width = camera.width;
-                this._renderArea!.height = camera.height;
                 framebuffer = commands[i].output;
     
+                this._renderArea!.width = camera.width;
+                this._renderArea!.height = camera.height;
+
                 if (!framebuffer) {
                     framebuffer = view.window!.framebuffer;
+
+                    this._renderArea!.x = vp.x * camera.width;
+                    this._renderArea!.y = vp.y * camera.height;
+                    this._renderArea!.width *= vp.width;
+                    this._renderArea!.height *= vp.height;
+                    
+                    cmdBuff.beginRenderPass(framebuffer, this._renderArea!,
+                        camera.clearFlag, _colors, camera.clearDepth, camera.clearStencil);
+                }
+                else {
+                    this._renderArea!.x = 0;
+                    this._renderArea!.y = 0;
+                    cmdBuff.beginRenderPass(framebuffer, this._renderArea!,
+                        GFXClearFlag.ALL, [{ r: 0.0, g: 0.0, b: 0.0, a: 0.0 }], 1.0, 0);
                 }
     
-                cmdBuff.beginRenderPass(framebuffer, this._renderArea!,
-                    GFXClearFlag.ALL, [{ r: 0.0, g: 0.0, b: 0.0, a: 1.0 }], 1.0, 0);
                 cmdBuff.bindPipelineState(this._psos[i]);
                 cmdBuff.bindBindingLayout(this._psos[i].pipelineLayout.layouts[0]);
                 cmdBuff.bindInputAssembler(quadIA);
@@ -167,8 +189,6 @@ export class PostProcessStage extends ForwardStage {
         bufs[0] = cmdBuff;
         this._device!.queue.submit(bufs);
     }
-
-    resize (width: number, height: number) { }
 
     _renderers: PostProcessRenderer[] = [];
     get renderers () {
@@ -212,8 +232,22 @@ export class PostProcessStage extends ForwardStage {
     rebuild () {
         this._psos.length = 0;
 
+        let frameBuffersToDestroy: GFXFramebuffer[] = [];
         let renderCommands = this._renderCommands;
+        for (let i = 0; i < renderCommands.length; i++) {
+            if (renderCommands[i].input && !frameBuffersToDestroy.includes(renderCommands[i].input)) {
+                if (renderCommands[i].input !== this._originFrameBuffer) {
+                    frameBuffersToDestroy.push(renderCommands[i].input)
+                }
+            }
+            if (renderCommands[i].output && !frameBuffersToDestroy.includes(renderCommands[i].output)) {
+                frameBuffersToDestroy.push(renderCommands[i].output)
+            }
+        }
         renderCommands.length = 0;
+        for (let i = 0; i < frameBuffersToDestroy.length; i++) {
+            frameBuffersToDestroy[i].destroy();
+        }
 
         let hasCommand = false;
         let renderers = this._renderers;
@@ -314,12 +348,22 @@ export class PostProcessStage extends ForwardStage {
             renderCommands[renderCommands.length - 1].output = null;
         }
     }
+
+    resize (width: number, height: number) {
+        if (this._originFrameBuffer) {
+            this._originFrameBuffer.destroy();
+            this._originFrameBuffer = null;
+        }
+        this.rebuild();
+    }
 }
 
 director.on(Director.EVENT_BEFORE_SCENE_LAUNCH, () => {
     let flow = director.root.pipeline.getFlow('PostProcessFlow');
     if (flow) {
         let stage = flow.stages.find(s => s instanceof PostProcessStage) as PostProcessStage;
-        stage.clear();
+        if (stage) {
+            stage.clear();
+        }
     }
 })

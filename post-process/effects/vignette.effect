@@ -1,10 +1,22 @@
 // Copyright (c) 2017-2018 Xiamen Yaji Software Co., Ltd.  
 
 CCEffect %{
+  temporaries:
+    d1: &d1 { depthTest: true, depthWrite: false }
+    b1: &b1
+      targets:
+      - blend: true
+        blendSrc: src_alpha
+        blendDst: one_minus_src_alpha
+        blendSrcAlpha: src_alpha
+        blendDstAlpha: one_minus_src_alpha
+
   techniques:
   - passes:
     - vert: post-process-vs:vert
       frag: fs:frag
+      depthStencilState: *d1
+      blendState: *b1
       properties:
         radius: { value: 1 }
         smoothness: { value: 0.3 }
