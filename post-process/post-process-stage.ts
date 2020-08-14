@@ -21,6 +21,7 @@ class PostEffectRenderCommand {
 }
 
 const _colors: IGFXColor[] = [ { r: 0, g: 0, b: 0, a: 1 } ];
+const _transparentClearColor: IGFXColor[]  = [ { r: 0, g: 0, b: 0, a: 1 } ];
 
 @ccclass("PostProcessStage")
 export class PostProcessStage extends ForwardStage {
@@ -123,7 +124,7 @@ export class PostProcessStage extends ForwardStage {
             this._renderArea!.height = camera.height * this.SSAA;
 
             cmdBuff.beginRenderPass(framebuffer, this._renderArea!,
-                GFXClearFlag.ALL, [{ r: 0.0, g: 0.0, b: 0.0, a: 0.0 }], 1.0, 0);
+                GFXClearFlag.ALL, _transparentClearColor, 1.0, 0);
         }
         else {
             this._renderArea!.x = vp.x * camera.width;
@@ -171,7 +172,7 @@ export class PostProcessStage extends ForwardStage {
                     this._renderArea!.x = 0;
                     this._renderArea!.y = 0;
                     cmdBuff.beginRenderPass(framebuffer, this._renderArea!,
-                        GFXClearFlag.ALL, [{ r: 0.0, g: 0.0, b: 0.0, a: 0.0 }], 1.0, 0);
+                        GFXClearFlag.ALL, _transparentClearColor, 1.0, 0);
                 }
     
                 cmdBuff.bindPipelineState(this._psos[i]);
