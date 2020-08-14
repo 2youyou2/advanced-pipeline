@@ -17,16 +17,12 @@ CCEffect %{
     - name: prefilter 
       vert: post-process-vs:vert
       frag: prefilter4:frag
-      depthStencilState: *d1
-      blendState: *b1
       properties:
         threshold: { value: 0.5 }
         softKnee: { value: 0.5 }
     - name: downsample
       vert: post-process-vs:vert
       frag: downsample4:frag
-      depthStencilState: *d1
-      blendState: *b1
       postEffect:
         output: { size: [0.5, 0.5], name: bloom_texture }
     - name: upsample
@@ -41,16 +37,12 @@ CCEffect %{
     - name: prefilter 
       vert: post-process-vs:vert
       frag: prefilter13:frag
-      depthStencilState: *d1
-      blendState: *b1
       properties:
         threshold: { value: 0.5 }
         softKnee: { value: 0.5 }
     - name: downsample
       vert: post-process-vs:vert
       frag: downsample13:frag
-      depthStencilState: *d1
-      blendState: *b1
       postEffect:
         output: { size: [0.5, 0.5], name: bloom_texture }
     - name: upsample
