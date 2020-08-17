@@ -21,7 +21,7 @@ class PostEffectRenderCommand {
 }
 
 const _colors: IGFXColor[] = [ { r: 0, g: 0, b: 0, a: 1 } ];
-const _transparentClearColor: IGFXColor[]  = [ { r: 0, g: 0, b: 0, a: 1 } ];
+const _transparentClearColor: IGFXColor[]  = [ { r: 0, g: 0, b: 0, a: 0 } ];
 
 @ccclass("PostProcessStage")
 export class PostProcessStage extends ForwardStage {
