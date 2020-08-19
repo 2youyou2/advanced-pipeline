@@ -136,12 +136,12 @@ export class PostProcessStage extends ForwardStage {
                 camera.clearFlag, _colors, camera.clearDepth, camera.clearStencil);
         }
 
-        for (let i = 0; i < this._renderQueues.length; i++) {
-            cmdBuff.execute(this._renderQueues[i].cmdBuffs.array, this._renderQueues[i].cmdBuffCount);
-        }
+        cmdBuff.execute(this._renderQueues[0].cmdBuffs.array, this._renderQueues[0].cmdBuffCount);
 
         (this as any)._opaqueInstancedQueue.recordCommandBuffer(cmdBuff);
         (this as any)._opaqueBatchedQueue.recordCommandBuffer(cmdBuff);
+
+        cmdBuff.execute(this._renderQueues[1].cmdBuffs.array, this._renderQueues[1].cmdBuffCount);
 
         cmdBuff.endRenderPass();
 
