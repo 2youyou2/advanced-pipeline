@@ -178,7 +178,7 @@ CCProgram depth-buffer-vs %{
   #include <cc-local>
   #include <cc-shadow>
 
-  #include <../chunks/ubo-custom-common>
+  #include <./chunks/ubo-custom-common>
 
   in vec3 a_position;
   in vec3 a_normal;
