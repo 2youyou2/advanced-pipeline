@@ -26,7 +26,9 @@ CCEffect %{
 	      bendPerspectiveCorrection: { value: 1 }
 
         mainTexture:    { value: white, editor: { parent: USE_MAIN_TXTURE } }
+        mainTiling:     { value: [0, 0, 1, 1] }
         mainColor:      { value: [1, 1, 1, 1], editor: { type: color } }
+        mainColorScale: { value: [1, 1, 1, 1] }
         hueColor:       { value: [1, 1, 1, 1], editor: { type: color } }
         ambientOcclusion: { value: 0.704 }
         randomDarken: { value: 0.287 }
@@ -68,6 +70,8 @@ CCProgram shared-ubos %{
 
   uniform Shared {
     vec4 mainColor;
+    vec4 mainTiling;
+    vec4 mainColorScale;
     float alphaTest;
     float shadowIntensity;
   };
@@ -78,8 +82,25 @@ CCProgram shared-ubos %{
 
 }%
 
+CCProgram get-mask %{
+  float getMask () {
+    #if Mask_Type == Mask_Channel_Color
+    return a_color.r;
+    #elif Mask_Type == Mask_Channel_Uv
+    return 1. - a_texCoord.y;
+    #else
+    return 0.;
+    #endif
+  }
+}%
+
 CCProgram shared-funcs %{
   #include <cc-global>
+
+  #define Mask_Channel_Color 1
+  #define Mask_Channel_Uv 2
+
+  #pragma define Mask_Type options([Mask_Channel_Color, Mask_Channel_Uv])
 
   BendSettings getBendSettings (float mask) {
     BendSettings s;
@@ -100,9 +121,7 @@ CCProgram shared-funcs %{
     return fract(mat[3][0] + mat[3][1] + mat[3][2]);
   }
 
-  void calcGrassOffset (in vec4 lPos, inout vec4 wPos, float rand, vec3 colorAttr) {
-    float mask = colorAttr.r;
-
+  void calcGrassOffset (in vec4 lPos, inout vec4 wPos, float rand, float mask) {
     WindSettings w = getWinSettings(mask);
     vec4 windOffset = getWindOffset(lPos.xyz, wPos.xyz, rand, w, windMap);
 
@@ -127,8 +146,8 @@ CCProgram shared-funcs %{
     wPos.y -= offsets.y;
   }
 
-  vec4 calcGrassVertexColor(in vec4 lPos, in vec4 wPos, float rand, vec3 colorAttr) {
-    return applyVertexColor(lPos.xyz, wPos.xyz, mainColor.xyz, colorAttr.r, ambientOcclusion, randomDarken, hueColor, rand);
+  vec4 calcGrassVertexColor(in vec4 lPos, in vec4 wPos, float rand, float mask) {
+    return applyVertexColor(lPos.xyz, wPos.xyz, mainColor.xyz * mainColorScale.xyz, mask, ambientOcclusion, randomDarken, hueColor, rand);
   }
 }%
 
@@ -142,10 +161,11 @@ CCProgram vs %{
   #include <cc-fog>
   #include <cc-shadow-map-vs>
 
+  in vec3 a_color;
+
+  #include <get-mask>
   #include <shared-ubos>
   #include <shared-funcs>
-
-  in vec3 a_color;
 
   out vec3 v_wPos;
   // out vec3 v_normal;
@@ -165,10 +185,15 @@ CCProgram vs %{
     vec4 lPos = In.position;
     vec4 wPos = matWorld * lPos;
 
-    float rand = objectPosRand01(matWorld); // should be 0 - 1;
-    calcGrassOffset(lPos, wPos, rand, a_color);
+    float mask = getMask();
 
-    v_color = calcGrassVertexColor(lPos, wPos, rand, a_color);
+    float rand = objectPosRand01(matWorld); // should be 0 - 1;
+    calcGrassOffset(lPos, wPos, rand, mask);
+
+    v_color = calcGrassVertexColor(lPos, wPos, rand, mask);
+
+    // debug mask
+    // v_color = vec4(mask);
 
     // debug bend map
     // vec2 uv = getBendMapUV(wPos.xyz);
@@ -246,7 +271,8 @@ CCProgram fs %{
 
   vec4 frag () {
     #if USE_MAIN_TXTURE
-    vec4 col = texture(mainTexture, v_uv);
+    vec2 uv = mainTiling.xy + mainTiling.zw * v_uv;
+    vec4 col = texture(mainTexture, uv);
     #else
     vec4 col = vec4(1.);
     #endif
@@ -297,6 +323,9 @@ CCProgram fs %{
     final = CC_APPLY_FOG(final, factor_fog);
 
     return final;
+
+    // debug
+    // return v_color;
   }
 }%
 
@@ -306,15 +335,16 @@ CCProgram shadow-caster-vs %{
   #include <cc-local-batch>
   #include <cc-shadow>
 
+  in vec3 a_color;
+
+  #include <get-mask>
   #include <shared-ubos>
   #include <shared-funcs>
 
   out vec2 v_uv;
 
   out vec2 v_clip_depth;
-
-  in vec3 a_color;
-
+  
   vec4 vert () {
     StandardVertInput In;
     CCVertInput(In);
@@ -325,8 +355,10 @@ CCProgram shadow-caster-vs %{
     vec4 lPos = In.position;
     vec4 wPos = matWorld * lPos;
 
+    float mask = getMask();
+
     float rand = objectPosRand01(matWorld); // should be 0 - 1;
-    calcGrassOffset(lPos, wPos, rand, a_color);
+    calcGrassOffset(lPos, wPos, rand, mask);
 
 
     vec4 clipPos = cc_matLightViewProj * wPos;
@@ -351,7 +383,8 @@ CCProgram shadow-caster-fs %{
 
   vec4 frag () {
     #if USE_MAIN_TXTURE
-    vec4 baseColor = texture(mainTexture, v_uv);
+    vec2 uv = mainTiling.xy + mainTiling.zw * v_uv;
+    vec4 baseColor = texture(mainTexture, uv);
     #else
     vec4 baseColor = vec4(1.);
     #endif
