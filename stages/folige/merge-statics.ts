@@ -14,6 +14,11 @@ export class MergeBlockData extends CCObject {
     @property
     _matrices: Mat4[] = [];
 
+    @property
+    get count () {
+        return this._matrices.length;
+    }
+
     _instances: InstancedBuffer[] = [];
 }
 
@@ -43,10 +48,28 @@ export class MergeStatics extends Component {
         let datas = this.datas;
         let data: MergeData | null = null;
         for (let i = 0; i < datas.length; i++) {
-            if (datas[i].mesh === mesh) {
+            let canMerge = true;
+            if (datas[i].mesh !== mesh) {
+                canMerge = false;
+                continue;
+            }
+
+            if (materials.length !== datas[i].materials.length) {
+                continue;
+            }
+
+            for (let mi = 0; mi < materials.length; mi++) {
+                if (datas[i].materials[mi] !== materials[mi]) {
+                    canMerge = false;
+                    break;
+                }
+            }
+
+            if (canMerge) {
                 data = datas[i];
                 break;
             }
+
         }
 
         if (!data) {
@@ -128,9 +151,9 @@ export class MergeStatics extends Component {
         log(`Merge Statics Mesh : ${this._rebuildIndex} - ${this.datas.length}, ${this._blockIndex} - ${data.blocks.length}`);
 
         let mesh = data.mesh;
-        let meshName = mesh!.name + '_' + mesh!._uuid;
+        let meshName = mesh ? (mesh.name + '_' + mesh._uuid) : '';
 
-        if (!mesh?.loaded) {
+        if (!mesh || !mesh.loaded) {
             let failedNode = new Node('Failed - ' + meshName);
             failedNode.parent = this.node;
 
