@@ -62,7 +62,7 @@ float sampleGustMap(vec3 wPos, WindSettings s, sampler2D windMap) {
 }
 
 vec4 getWindOffset (in vec3 positionOS, in vec3 wPos, float randOffset, WindSettings s, sampler2D windMap) {
-  vec4 offset;
+  	vec4 offset = vec4(0.);
 
 	//Random offset per vertex
 	float f = length(positionOS.xz) * s.randVertex;
@@ -80,13 +80,12 @@ vec4 getWindOffset (in vec3 positionOS, in vec3 wPos, float randOffset, WindSett
 
 	//Mask by direction vector + gusting push
 	offset.xz = vec2(sine + gust);
-	offset.y = s.mask;
 
 	//Summed offset strength
 	float windWeight = length(offset.xz) + 0.0001;
 	//Slightly negate the triangle-shape curve
 	windWeight = pow(windWeight, 1.5);
-	offset.y *= windWeight;
+	offset.y = windWeight * s.mask;
 
 	//Wind strength in alpha
 	offset.a = sine + gust;

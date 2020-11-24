@@ -250,7 +250,7 @@ CCProgram fs %{
     return shadowAttenuation;
   }
 
-  vec3 Translucency(vec3 viewDirectionWS, float amount, float shadowAttenuation) {
+  void Translucency(vec3 viewDirectionWS, float amount, float shadowAttenuation, inout vec3 color) {
     vec3 ld = normalize(cc_mainLitDir.xyz);
     float VdotL = max(0., dot(viewDirectionWS, ld)) * amount;
 
@@ -266,7 +266,9 @@ CCProgram fs %{
 
     // tMask *= angleMask;
 
-    return clamp(tMask * cc_mainLitColor.rgb * cc_mainLitColor.w, 0., 1.);
+	  vec3 tColor = color + BlendOverlay(cc_mainLitColor.rgb * cc_mainLitColor.w, color);
+
+    color = mix(color, tColor, tMask);
   }
 
   vec4 frag () {
@@ -316,9 +318,7 @@ CCProgram fs %{
     final.rgb = final.rgb * shadowAttenuation;
 
     // translucency
-    vec3 transmissionColor = Translucency(viewDirection, translucency, shadowAttenuation);
-
-	  final.rgb += BlendOverlay(transmissionColor * 2.0, final.rgb);
+    Translucency(viewDirection, translucency, shadowAttenuation, final.rgb);
 
     final = CC_APPLY_FOG(final, factor_fog);
 
