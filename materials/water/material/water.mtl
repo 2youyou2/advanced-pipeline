@@ -9,8 +9,9 @@
   "_techIdx": 1,
   "_defines": [
     {
-      "USE_FOAM": true,
-      "USE_CAUSTIC": true
+      "USE_LIGHT": true,
+      "USE_WAVE": true,
+      "USE_FOAM": true
     }
   ],
   "_states": [
@@ -26,29 +27,30 @@
   ],
   "_props": [
     {
-      "roughness": 0.8,
       "normalStrenth": 1,
-      "depthDistance": 2,
+      "depthDistance": 2.4,
       "shallowColor": {
         "__type__": "cc.Color",
-        "r": 13,
-        "g": 82,
-        "b": 78,
-        "a": 76
+        "r": 109,
+        "g": 104,
+        "b": 104,
+        "a": 56
       },
       "deepColor": {
         "__type__": "cc.Color",
-        "r": 23,
-        "g": 160,
-        "b": 180,
-        "a": 171
+        "r": 3,
+        "g": 5,
+        "b": 39,
+        "a": 225
       },
       "coastOpacity": 0.15,
-      "foamDistance": 0.7,
+      "foamDistance": 1,
       "foamDensity": 0.7,
       "foamTile": 2,
       "foamContrast": 0.7,
-      "causticScale": 40,
+      "causticStrength": 0.17,
+      "causticScale": 15,
+      "causticSpeed": 0.05,
       "causticTexture": {
         "__uuid__": "04f9f064-9886-42a8-b856-4af0f3e3422a@6c48a"
       }

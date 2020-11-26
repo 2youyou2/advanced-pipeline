@@ -289,7 +289,7 @@ CCProgram depth-buffer-vs %{
   #include <cc-shadow>
   #include <cc-global>
 
-  #include <./chunks/ubo-custom-common>
+  #include <../chunks/ubo-custom-common>
 
   #if HAS_SECOND_UV || USE_LIGHTMAP
     in vec2 a_texCoord1;

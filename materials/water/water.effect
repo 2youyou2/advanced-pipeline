@@ -7,9 +7,9 @@ CCEffect %{
     - vert: water-vs:vert
       frag: water-fs:frag
       properties: &props
-        occlusion:      { value: 1.0, target: pbrParams.x }
-        roughness:      { value: 0.1, target: pbrParams.y }
-        metallic:       { value: 0, target: pbrParams.z }
+        occlusion:      { value: 1.0, target: pbrParams.x, editor: { parent: USE_LIGHT } }
+        roughness:      { value: 0.1, target: pbrParams.y, editor: { parent: USE_LIGHT } }
+        metallic:       { value: 0, target: pbrParams.z, editor: { parent: USE_LIGHT } }
         
         normalStrenth:  { value: 0.5, target: normalParams.x, editor: { parent: USE_NORMAL_MAP } }
         normalTile:     { value: 1, target: normalParams.y, editor: { parent: USE_NORMAL_MAP } }
@@ -35,7 +35,6 @@ CCEffect %{
         causticScale:       { value: 2.33,  target: causticParams1.y, editor: { parent: USE_CAUSTIC } }
         causticSpeed:       { value: 0.1,   target: causticParams1.z, editor: { parent: USE_CAUSTIC } }
         causticRGBSplit:    { value: 0.35,  target: causticParams1.w, editor: { parent: USE_CAUSTIC } }
-        causticMinStrength: { value: 0.05,  target: causticParams2.x, editor: { parent: USE_CAUSTIC } }
         causticColor:       { value: [1, 1, 1],   target: causticParams2.yzw, editor: { parent: USE_CAUSTIC, type: color } }
         causticTexture:     { value: white, editor: { parent: USE_CAUSTIC } }
 
@@ -58,11 +57,11 @@ CCEffect %{
 CCProgram shared-ubos %{
   #define pi 3.14
 
-  uniform Constants {
+  #if USE_LIGHT
+  uniform Light {
     vec4 pbrParams;
-    vec4 emissive;
-    vec4 emissiveScaleParam;
   };
+  #endif
 
   uniform Water {
     vec4 normalParams;
@@ -86,6 +85,7 @@ CCProgram water-vs %{
   #include <cc-global>
   #include <cc-local-batch>
   #include <shared-ubos>
+  #include <cc-shadow-map-vs>
 
   out vec3 v_position;
   out vec4 v_projPos;
@@ -186,6 +186,8 @@ CCProgram water-vs %{
     //   v_color = a_color;
     // #endif
 
+    CCPassShadowParams(worldPos);
+
     return v_projPos;
   }
 }%
@@ -193,8 +195,8 @@ CCProgram water-vs %{
 CCProgram water-fs %{
   precision highp float;
   #include <cc-global>
-  // #include <shading-standard>
-  // #include <output-standard>
+  #include <shading-standard>
+  #include <output-standard>
   #include <gamma>
   #include <shared-ubos>
 
@@ -321,30 +323,10 @@ CCProgram water-fs %{
   }
   #endif
 
-  // void surf (out StandardSurface s) {
-  //   s.normal = v_normal;
-  //   #if USE_NORMAL_MAP
-  //     float normalStrenth = normalParams.x;
-  //     vec2 normalUV = v_uv * normalParams.y;
-  //     vec2 moveUV = normalUV + normalParams.zw * cc_time.x / 40.;
-  //     vec3 nmmp = normalBlend(texture(normalMap, moveUV).xyz - vec3(.5), texture(normalMap, normalUV).xyz - vec3(.5));
-  //     s.normal =
-  //       (nmmp.x * normalStrenth) * normalize(v_tangent) +
-  //       (nmmp.y * normalStrenth) * normalize(v_bitangent) +
-  //       nmmp.z * normalize(s.normal);
-  //   #endif
-
-  //   s.position = v_position;
-
-  //   vec4 pbr = pbrParams;
-  //   s.occlusion = clamp(pbr.x, 0.0, 0.96);
-  //   s.roughness = clamp(pbr.y, 0.04, 1.0);
-  //   s.metallic = pbr.z;
-  // }
-
   #include <../chunks/ubo-custom-common>
 
   // depth function
+
   float worldDepthFade (vec4 sceneWorldPos, float dist) {
     return clamp((v_position.y - sceneWorldPos.y) / dist, 0., 1.);
   }
@@ -361,7 +343,7 @@ CCProgram water-fs %{
     return cc_matViewInv * vec4(viewPos, 1.);
   }
   
-  // noise
+  // voronoi noise
 
   vec2 voronoihash( vec2 p )
   {
@@ -397,6 +379,36 @@ CCProgram water-fs %{
     return F1;
   }
 
+  // pbr
+
+  #if USE_LIGHT
+  vec4 surf (vec4 albedo) {
+    StandardSurface s;
+
+    s.albedo = albedo;
+    s.normal = v_normal;
+
+    #if USE_NORMAL_MAP
+      float normalStrenth = normalParams.x;
+      vec2 normalUV = v_uv * normalParams.y;
+      vec2 moveUV = normalUV + normalParams.zw * cc_time.x / 40.;
+      vec3 nmmp = normalBlend(texture(normalMap, moveUV).xyz - vec3(.5), texture(normalMap, normalUV).xyz - vec3(.5));
+      s.normal =
+        (nmmp.x * normalStrenth) * normalize(v_tangent) +
+        (nmmp.y * normalStrenth) * normalize(v_bitangent) +
+        nmmp.z * normalize(s.normal);
+    #endif
+
+    s.position = v_position;
+
+    vec4 pbr = pbrParams;
+    s.occlusion = clamp(pbr.x, 0.0, 0.96);
+    s.roughness = clamp(pbr.y, 0.04, 1.0);
+    s.metallic = pbr.z;
+
+    return CCStandardShading(s);
+  }
+  #endif
 
   vec4 frag () {
     // depth
@@ -426,21 +438,21 @@ CCProgram water-fs %{
 
     // caustic
     vec4 finalCausticColor = vec4(0.);
-    // #if USE_CAUSTIC
-    //   finalCausticColor = caustic();
-     
-    //   float causticMinStrength = causticParams2.x;
-    //   vec3 causticColor = causticParams2.xyz;
+    #if USE_CAUSTIC
+      vec3 causticColor = causticParams2.yzw;
 
-    //   finalCausticColor *= clamp((1.- depth), 0., 1.) + causticMinStrength;
-    //   finalCausticColor *= causticColor;
+      finalCausticColor.rgb = caustic() * causticColor;
+    #endif
 
-    //   baseColor.rgb += finalCausticColor;
-    // #endif
-
+    // final
     vec4 finalColor = waterColor + finalFoamColor + finalCausticColor;
     finalColor *= opacity * eyeDepthFade(sceneEyeDepth, eyeDepth, coastOpacity);
 
-    return finalColor;
+    #if USE_LIGHT
+    finalColor = surf(finalColor);
+    #endif
+
+    return CCFragOutput(finalColor);
+    // return finalColor;
   }
 }%
