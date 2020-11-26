@@ -35,6 +35,7 @@ CCEffect %{
         causticScale:       { value: 2.33,  target: causticParams1.y, editor: { parent: USE_CAUSTIC } }
         causticSpeed:       { value: 0.1,   target: causticParams1.z, editor: { parent: USE_CAUSTIC } }
         causticRGBSplit:    { value: 0.35,  target: causticParams1.w, editor: { parent: USE_CAUSTIC } }
+        causticDepth:       { value: 1,  target: causticParams2.x, editor: { parent: USE_CAUSTIC } }
         causticColor:       { value: [1, 1, 1],   target: causticParams2.yzw, editor: { parent: USE_CAUSTIC, type: color } }
         causticTexture:     { value: white, editor: { parent: USE_CAUSTIC } }
 
@@ -439,9 +440,11 @@ CCProgram water-fs %{
     // caustic
     vec4 finalCausticColor = vec4(0.);
     #if USE_CAUSTIC
+      float causticDepth = causticParams2.x;
       vec3 causticColor = causticParams2.yzw;
 
       finalCausticColor.rgb = caustic() * causticColor;
+      finalCausticColor.rgb *= 1. - eyeDepthFade(sceneEyeDepth, eyeDepth, causticDepth);
     #endif
 
     // final
@@ -450,9 +453,9 @@ CCProgram water-fs %{
 
     #if USE_LIGHT
     finalColor = surf(finalColor);
+    finalColor = CCFragOutput(finalColor);
     #endif
 
-    return CCFragOutput(finalColor);
-    // return finalColor;
+    return finalColor;
   }
 }%
