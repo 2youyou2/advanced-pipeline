@@ -36,6 +36,7 @@ CCEffect %{
         specularHighlight: { value: 0 }
         translucency: { value: 1 }
         shadowIntensity: { value: 0.4 }
+        fixedNormal: { value: [0.5, 0.5, 1, 1], editor: { parent: USE_FIXED_NORMAL } }
     - vert: shadow-caster-vs:vert
       frag: shadow-caster-fs:frag
       phase: shadow-caster
@@ -72,6 +73,7 @@ CCProgram shared-ubos %{
     vec4 mainColor;
     vec4 mainTiling;
     vec4 mainColorScale;
+    vec4 fixedNormal;
     float alphaTest;
     float shadowIntensity;
   };
@@ -168,12 +170,13 @@ CCProgram vs %{
   #include <shared-funcs>
 
   out vec3 v_wPos;
-  // out vec3 v_normal;
-  out vec3 v_tangent;
-  out vec3 v_bitangent;
   out vec2 v_uv;
   out vec4 v_color;
   out float factor_fog;
+
+  #if !USE_FIXED_NORMAL
+  out vec3 v_normal;
+  #endif
 
   vec4 vert () {
     StandardVertInput In;
@@ -200,9 +203,10 @@ CCProgram vs %{
 	  // v_color = texture(cc_grass_bend_map, uv);
 
     v_wPos = wPos.xyz;
-    // v_normal = normalize((matWorldIT * vec4(In.normal, 0.0)).xyz);
-    // v_tangent = normalize((matWorld * vec4(In.tangent.xyz, 0.0)).xyz);
-    // v_bitangent = cross(v_normal, v_tangent) * In.tangent.w; // note the cross order
+
+    #if !USE_FIXED_NORMAL
+    v_normal = normalize((matWorldIT * vec4(In.normal, 0.0)).xyz);
+    #endif
 
     v_uv = a_texCoord;
     factor_fog = CC_TRANSFER_FOG(wPos);
@@ -234,7 +238,10 @@ CCProgram fs %{
   in float factor_fog;
 
   in vec3 v_wPos;
-  // in vec3 v_normal;
+
+  #if !USE_FIXED_NORMAL
+  in vec3 v_normal;
+  #endif
 
   float getShadowAttenuation () {
     float shadowAttenuation = 0.0;
@@ -309,8 +316,12 @@ CCProgram fs %{
     s.opacity = alpha;
     s.glossiness = 10.;
     s.position = v_wPos;
-    // s.normal = v_normal;
-	  s.normal = vec3(0.5, 0.5, 1);
+
+    #if USE_FIXED_NORMAL
+      s.normal = fixedNormal.xyz;
+    #else
+      s.normal = v_normal;
+    #endif
 
     s.viewDirection = viewDirection;
 
