@@ -4,8 +4,8 @@ const { SetIndex, UBOShadow } = pipeline;
 
 import { DepthBufferObject } from './depth-buffer-object';
 import { UNIFORM_DEPTH_BUFFER_MAP_BINDING, UBOCustomCommon } from '../../defines/ubo';
-import { EDITOR } from "cce.env";
 import { commitBuffer } from "../../utils/stage";
+import { EDITOR } from 'cce:env';
 
 
 const colors: GFXColor[] = [{ x: 1, y: 1, z: 1, w: 1 }];
