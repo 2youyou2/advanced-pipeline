@@ -1,5 +1,6 @@
-import { CCObject, Component, getPhaseID, InstancedBuffer, log, Mat4, Material, Mesh, MeshRenderer, Node, Vec3, _decorator } from 'cc';
+import { CCObject, Component, InstancedBuffer, log, Mat4, Material, Mesh, MeshRenderer, Node, Vec3, _decorator } from 'cc';
 import { EDITOR } from 'cce.env';
+import { getPhaseID } from '../../defines/pipeline';
 import { InstanceBlockStage } from './instance-block-stage';
 const { ccclass, executeInEditMode, property, type } = _decorator;
 

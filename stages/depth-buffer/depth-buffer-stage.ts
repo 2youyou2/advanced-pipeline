@@ -1,12 +1,13 @@
-import { _decorator, RenderStage, GFXRect, GFXColor, ForwardPipeline, RenderView, ModelComponent, Material, renderer, PipelineStateManager, GFXRenderPass, GFXFormat, GFXLoadOp, GFXStoreOp, GFXTextureLayout, GFXShaderStageFlagBit, GFXDescriptorType, pipeline, GFXType, GFXFilter, GFXAddress, RenderFlow, RenderPipeline, director, Vec4, GFXBufferUsageBit, GFXMemoryUsageBit, GFXClearFlag, GFXCullMode, RenderTexture, GFXUniformSampler, GFXDescriptorSetLayoutBinding, GFXUniformBlock, GFXUniform, GFXBufferInfo, GFXRenderPassInfo, GFXColorAttachment, GFXDepthStencilAttachment, Mat4, getPhaseID, Terrain, GFXCommandBuffer, GFXDevice } from "cc";
-const { ccclass, type, property } = _decorator;
-const { SetIndex, UBOShadow } = pipeline;
+import { _decorator, RenderStage, GFXRect, GFXColor, ForwardPipeline, RenderView, ModelComponent, Material, renderer, PipelineStateManager, GFXRenderPass, GFXFormat, GFXLoadOp, GFXStoreOp, GFXTextureLayout, GFXShaderStageFlagBit, GFXDescriptorType, GFXType, GFXFilter, GFXAddress, RenderFlow, RenderPipeline, director, Vec4, GFXBufferUsageBit, GFXMemoryUsageBit, GFXClearFlag, GFXCullMode, RenderTexture, GFXUniformSampler, GFXDescriptorSetLayoutBinding, GFXUniformBlock, GFXUniform, GFXBufferInfo, GFXRenderPassInfo, GFXColorAttachment, GFXDepthStencilAttachment, Mat4, Terrain, GFXCommandBuffer, GFXDevice } from "cc";
+import { EDITOR } from "cce.env";
 
 import { DepthBufferObject } from './depth-buffer-object';
 import { UNIFORM_DEPTH_BUFFER_MAP_BINDING, UBOCustomCommon } from '../../defines/ubo';
-import { EDITOR } from "cce.env";
 import { commitBuffer } from "../../utils/stage";
+import { getPhaseID, pipeline } from '../../defines/pipeline';
 
+const { ccclass, type, property } = _decorator;
+const { SetIndex } = pipeline;
 
 const colors: GFXColor[] = [{ x: 1, y: 1, z: 1, w: 1 }];
 

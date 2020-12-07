@@ -1,11 +1,13 @@
-import { _decorator, RenderStage, GFXRect, GFXColor, GFXCommandBuffer, ForwardPipeline, RenderView, ModelComponent, Material, renderer, PipelineStateManager, GFXRenderPass, GFXFormat, GFXLoadOp, GFXStoreOp, GFXTextureLayout, GFXShaderStageFlagBit, GFXDescriptorType, pipeline, GFXType, GFXFilter, GFXAddress, RenderFlow, RenderPipeline, director, Vec4, GFXBufferUsageBit, GFXMemoryUsageBit, GFXClearFlag, GFXCullMode, RenderTexture, GFXUniformSampler, GFXDescriptorSetLayoutBinding, GFXUniformBlock, GFXUniform, GFXBufferInfo, GFXRenderPassInfo, GFXColorAttachment, GFXDepthStencilAttachment, getPhaseID } from "cc";
-const { SetIndex } = pipeline;
-const { ccclass, type } = _decorator;
+import { _decorator, RenderStage, GFXRect, GFXColor, GFXCommandBuffer, ForwardPipeline, RenderView, ModelComponent, Material, renderer, PipelineStateManager, GFXRenderPass, GFXFormat, GFXLoadOp, GFXStoreOp, GFXTextureLayout, GFXShaderStageFlagBit, GFXDescriptorType, GFXType, GFXFilter, GFXAddress, RenderFlow, RenderPipeline, director, Vec4, GFXBufferUsageBit, GFXMemoryUsageBit, GFXClearFlag, GFXCullMode, RenderTexture, GFXUniformSampler, GFXDescriptorSetLayoutBinding, GFXUniformBlock, GFXUniform, GFXBufferInfo, GFXRenderPassInfo, GFXColorAttachment, GFXDepthStencilAttachment } from "cc";
 
 import { GrassBender } from "./src/grass-bender";
 import { GrassBenderRenderer } from "./src/grass-bender-renderer";
 import { UBOGrassBend, UNIFORM_GRASS_BEND_MAP_BINDING } from '../../defines/ubo';
 import { commitBuffer } from "../../utils/stage";
+import { getPhaseID, pipeline } from '../../defines/pipeline';
+
+const { SetIndex } = pipeline;
+const { ccclass, type } = _decorator;
 
 const tempVec4 = new Vec4;
 

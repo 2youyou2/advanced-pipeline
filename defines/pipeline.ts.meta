@@ -1,0 +1,17 @@
+{
+  "ver": "4.0.9",
+  "importer": "typescript",
+  "imported": true,
+  "uuid": "a3b07e60-e4be-4c9b-8d01-e31a6a61faa6",
+  "files": [
+    ".js",
+    "editor.js",
+    ".trans"
+  ],
+  "subMetas": {},
+  "userData": {
+    "importAsPlugin": false,
+    "moduleId": "project:///assets/advanced-pipeline/defines/pipeline.js",
+    "importerSettings": 4
+  }
+}

@@ -1,4 +1,6 @@
-import { GFXCommandBuffer, GFXDevice, GFXRenderPass, pipeline, PipelineStateManager, renderer } from "cc";
+import { GFXCommandBuffer, GFXDevice, GFXRenderPass, PipelineStateManager, renderer } from "cc";
+import { pipeline } from '../defines/pipeline';
+
 const { SetIndex } = pipeline;
 
 export function commitBuffer (model: renderer.scene.Model, cmdBuff: GFXCommandBuffer, device: GFXDevice, renderPass: GFXRenderPass, phaseID: number) {
