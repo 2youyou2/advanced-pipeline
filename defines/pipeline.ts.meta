@@ -2,7 +2,7 @@
   "ver": "4.0.10",
   "importer": "typescript",
   "imported": true,
-  "uuid": "00b5e54a-3037-438d-9efb-7b41d6872325",
+  "uuid": "a3b07e60-e4be-4c9b-8d01-e31a6a61faa6",
   "files": [
     ".js",
     "editor.js",
@@ -11,7 +11,7 @@
   "subMetas": {},
   "userData": {
     "importAsPlugin": false,
-    "moduleId": "project:///assets/advanced-pipeline/stages/depth-buffer/depth-buffer-object.js",
+    "moduleId": "project:///assets/advanced-pipeline/defines/pipeline.js",
     "importerSettings": 4
   }
 }
