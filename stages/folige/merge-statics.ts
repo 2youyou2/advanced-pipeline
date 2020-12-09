@@ -98,7 +98,7 @@ export class MergeStatics extends Component {
             data.blocks.push(block);
         }
 
-        block._matrices.push(matrix);
+        block._matrices.push(new Mat4(matrix));
     }
 
     clear () {
