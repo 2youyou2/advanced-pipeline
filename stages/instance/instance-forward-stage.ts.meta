@@ -2,7 +2,7 @@
   "ver": "4.0.10",
   "importer": "typescript",
   "imported": true,
-  "uuid": "a59888c3-8194-4522-9ded-d12de0792dec",
+  "uuid": "daa94191-1700-47f6-8586-2a8bab2793c3",
   "files": [
     ".js",
     "editor.js",
@@ -11,7 +11,7 @@
   "subMetas": {},
   "userData": {
     "importAsPlugin": false,
-    "moduleId": "project:///assets/advanced-pipeline/stages/folige/instance-block-stage.js",
+    "moduleId": "project:///assets/libs/advanced-pipeline/stages/instance/instance-forward-stage.js",
     "importerSettings": 4
   }
 }

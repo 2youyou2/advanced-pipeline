@@ -1,6 +1,6 @@
 import { pipeline as _pipeline, getPhaseID as _getPhaseID } from 'cc';
 
-let SetIndex, PipelineGlobalBindings, globalDescriptorSetLayout, bindingMappingInfo;
+let SetIndex, PipelineGlobalBindings, globalDescriptorSetLayout, bindingMappingInfo, UBOShadow;
 
 // fixed native
 if (typeof _pipeline === 'undefined') {
@@ -19,6 +19,7 @@ else {
     PipelineGlobalBindings = _pipeline.PipelineGlobalBindings;
     globalDescriptorSetLayout = _pipeline.globalDescriptorSetLayout;
     bindingMappingInfo = _pipeline.bindingMappingInfo;
+    UBOShadow = _pipeline.UBOShadow;
 }
 
 
@@ -27,6 +28,7 @@ export const pipeline = {
     PipelineGlobalBindings,
     globalDescriptorSetLayout,
     bindingMappingInfo,
+    UBOShadow,
 };
 
 

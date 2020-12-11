@@ -11,7 +11,7 @@
   "subMetas": {},
   "userData": {
     "importAsPlugin": false,
-    "moduleId": "project:///assets/advanced-pipeline/defines/pipeline.js",
+    "moduleId": "project:///assets/libs/advanced-pipeline/defines/pipeline.js",
     "importerSettings": 4
   }
 }

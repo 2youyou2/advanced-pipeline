@@ -2,7 +2,7 @@
   "ver": "4.0.10",
   "importer": "typescript",
   "imported": true,
-  "uuid": "5f9a4583-dc11-49d2-bba9-417d1784a7ca",
+  "uuid": "4a46346d-ae84-45dd-9826-b7cb2a418973",
   "files": [
     ".js",
     "editor.js",
@@ -11,7 +11,7 @@
   "subMetas": {},
   "userData": {
     "importAsPlugin": false,
-    "moduleId": "project:///assets/libs/advanced-pipeline/stages/grass/grass-bend-render-stage.js",
+    "moduleId": "project:///assets/libs/advanced-pipeline/stages/instance/instace-manager.js",
     "importerSettings": 4
   }
 }

@@ -1,50 +1,45 @@
-import { _decorator, RenderView, ForwardStage, ForwardPipeline, Color, Camera, gfx, director, renderer, PipelineStateManager } from "cc";
-import { pipeline } from '../../defines/pipeline';
-import { MergeStatics } from './merge-statics';
+import { _decorator, RenderView, ForwardStage, ForwardPipeline, Color, gfx, director, geometry } from "cc";
+import { getPhaseID, pipeline } from '../../defines/pipeline';
+import { InstanceManager } from './instace-manager';
 
 const { ccclass, property } = _decorator;
 const { SetIndex } = pipeline;
 
 const colors: Color[] = [new Color(0, 0, 0, 1)];
 
+let _phase = getPhaseID('default');
 
-@ccclass("InstanceBlockStage")
-export class InstanceBlockStage extends ForwardStage {
-    static get instance (): InstanceBlockStage | null {
-        let flow = director.root!.pipeline.flows.find(f => f.name === 'ForwardFlow');
-        if (!flow) return null;
-        return flow.stages.find(s => s.name === 'InstanceBlockStage') as InstanceBlockStage;
-    }
-    _name = 'InstanceBlockStage'
 
-    blocks: MergeStatics[] = [];
-
-    addObject (block: MergeStatics) {
-        if (this.blocks.indexOf(block) === -1) {
-            this.blocks.push(block);
-        }
-    }
-    removeObject (block: MergeStatics) {
-        let index = this.blocks.indexOf(block);
-        if (index !== -1) {
-            this.blocks.splice(index, 1);
-        }
-    }
+@ccclass("InstanceForwardStage")
+export class InstanceForwardStage extends ForwardStage {
+    _name = 'InstanceForwardStage'
 
     resize () {
 
     }
 
-    renderInstanceBlocks (view: RenderView) {
+    renderInstances (view: RenderView) {
+        const camera = view.camera;
+
         let instancedQueue = (this as any)._instancedQueue;
         instancedQueue.queue.clear();
 
-        for (let bi = 0; bi < this.blocks.length; bi++) {
-            let block = this.blocks[bi];
-            for (let di = 0; di < block.datas.length; di++) {
-                let blocks = block.datas[di].blocks;
+        let objects = InstanceManager.instance.objects;
+        for (let bi = 0; bi < objects.length; bi++) {
+            let object = objects[bi];
+            for (let di = 0; di < object.datas.length; di++) {
+                let blocks = object.datas[di].blocks;
                 for (let bbi = 0; bbi < blocks.length; bbi++) {
-                    let instances = blocks[bbi]._instances;
+                    let block = blocks[bbi];
+                    if (!geometry.intersect.aabbFrustum(block.worldBound, camera.frustum)) {
+                        continue;
+                    }
+
+                    let instances = block._instances.get(_phase);
+                    if (!instances) {
+                        continue;
+                    }
+
                     for (let ii = 0; ii < instances.length; ii++) {
                         instancedQueue.queue.add(instances[ii]);
                     }
@@ -55,7 +50,6 @@ export class InstanceBlockStage extends ForwardStage {
         const pipeline = this._pipeline as ForwardPipeline;
         const device = pipeline.device;
 
-        const camera = view.camera;
         const vp = camera.viewport;
 
         // render area is not oriented
@@ -104,7 +98,7 @@ export class InstanceBlockStage extends ForwardStage {
     }
 
     render (view: RenderView) {
-        this.renderInstanceBlocks(view);
+        this.renderInstances(view);
 
         // should not clear the already draw content
         let clearFlag = view.camera.clearFlag;

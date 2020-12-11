@@ -31,7 +31,7 @@
     ]
   },
   {
-    "__type__": "ShadowStage",
+    "__type__": "InstanceShadowStage",
     "_name": "ShadowStage",
     "_priority": 0,
     "_tag": 0
@@ -67,8 +67,8 @@
     "_tag": 0
   },
   {
-    "__type__": "InstanceBlockStage",
-    "_name": "InstanceBlockStage",
+    "__type__": "InstanceForwardStage",
+    "_name": "InstanceForwardStage",
     "_priority": 1,
     "_tag": 0,
     "renderQueues": [

@@ -1,15 +1,17 @@
 
-import { CCObject, Component, InstancedBuffer, log, Mat4, Material, Mesh, MeshRenderer, Node, Vec3, _decorator } from 'cc';
+import { CCObject, Component, geometry, InstancedBuffer, instantiate, log, Mat4, Material, Mesh, MeshRenderer, Node, Vec3, _decorator } from 'cc';
 import { EDITOR } from 'cc/env';
 import { getPhaseID } from '../../defines/pipeline';
-import { InstanceBlockStage } from './instance-block-stage';
+import { debug, TechniqueNams } from '../../utils/draw';
+import { InstanceManager } from './instace-manager';
+import { InstanceForwardStage } from './instance-forward-stage';
 const { ccclass, executeInEditMode, property, type } = _decorator;
 
-const _phaseID = getPhaseID('default');
+const _shadowCasterPhaseID = getPhaseID('shadow-caster');
 const _tempVec3 = new Vec3;
 
-@ccclass('MergeBlockData')
-export class MergeBlockData extends CCObject {
+@ccclass('InstanceBlockData')
+export class InstanceBlockData extends CCObject {
     @property
     blockName = '';
 
@@ -21,34 +23,36 @@ export class MergeBlockData extends CCObject {
         return this._matrices.length;
     }
 
-    _instances: InstancedBuffer[] = [];
+    _instances: Map<number, InstancedBuffer[]> = new Map;
+
+    worldBound = new geometry.AABB
 }
 
-@ccclass('MergeData')
-export class MergeData extends CCObject {
+@ccclass('InstanceData')
+export class InstanceData extends CCObject {
     @type(Mesh)
     mesh: Mesh | null = null;
 
     @type(Material)
     materials: Material[] = [];
 
-    @type(MergeBlockData)
-    blocks: MergeBlockData[] = [];
+    @type(InstanceBlockData)
+    blocks: InstanceBlockData[] = [];
 }
 
 
-@ccclass('MergeStatics')
+@ccclass('InstanceObject')
 @executeInEditMode
-export class MergeStatics extends Component {
+export class InstanceObject extends Component {
     @property
-    mergeSize = 10;
+    blockSize = 100;
 
-    @type(MergeData)
-    datas: MergeData[] = [];
+    @type(InstanceData)
+    datas: InstanceData[] = [];
 
     addData (mesh: Mesh, matrix: Mat4, materials: Material[]) {
         let datas = this.datas;
-        let data: MergeData | null = null;
+        let data: InstanceData | null = null;
         for (let i = 0; i < datas.length; i++) {
             let canMerge = true;
             if (datas[i].mesh !== mesh) {
@@ -75,26 +79,28 @@ export class MergeStatics extends Component {
         }
 
         if (!data) {
-            data = new MergeData();
+            data = new InstanceData();
             data.mesh = mesh;
             data.materials = materials;
             this.datas.push(data);
         }
 
         Mat4.getTranslation(_tempVec3, matrix);
-        let x = Math.floor(_tempVec3.x / this.mergeSize);
-        let z = Math.floor(_tempVec3.z / this.mergeSize);
+        let x = Math.floor(_tempVec3.x / this.blockSize);
+        let z = Math.floor(_tempVec3.z / this.blockSize);
         let blockName = `${x}_${z}`;
 
-        let block: MergeBlockData | null = null;
+        let block: InstanceBlockData | null = null;
         for (let i = 0; i < data.blocks.length; i++) {
             if (data.blocks[i].blockName === blockName) {
                 block = data.blocks[i];
             }
         }
         if (!block) {
-            block = new MergeBlockData();
+            block = new InstanceBlockData();
             block.blockName = blockName;
+            block.worldBound.center.set((x + 0.5) * this.blockSize, 0, (z + 0.5) * this.blockSize);
+            block.worldBound.halfExtents.set(this.blockSize / 2, 10000, this.blockSize / 2);
             data.blocks.push(block);
         }
 
@@ -125,17 +131,37 @@ export class MergeStatics extends Component {
     }
 
     onEnable () {
-        if (InstanceBlockStage.instance) {
-            InstanceBlockStage.instance.addObject(this);
+        if (InstanceManager.instance) {
+            InstanceManager.instance.addObject(this);
         }
     }
     onDisable () {
-        if (InstanceBlockStage.instance) {
-            InstanceBlockStage.instance.removeObject(this);
+        if (InstanceManager.instance) {
+            InstanceManager.instance.removeObject(this);
         }
     }
 
     update () {
+        let drawer = debug.drawer;
+
+        drawer.technique = TechniqueNams.transparent;
+        drawer.color.set(255, 255, 255, 100);
+
+        let object = this;
+        for (let di = 0; di < object.datas.length; di++) {
+            let blocks = object.datas[di].blocks;
+            for (let bbi = 0; bbi < blocks.length; bbi++) {
+                let block = blocks[bbi];
+                drawer.matrix.identity();
+                drawer.matrix.translate(block.worldBound.center);
+                drawer.box({
+                    width: this.blockSize,
+                    height: this.blockSize,
+                    length: this.blockSize,
+                })
+            }
+        }
+
         if (this._rebuildIndex >= this.datas.length) {
             if (this._startTime !== 0) {
                 log(`End rebuild instances : ${(Date.now() - this._startTime) / 1000}s.`);
@@ -194,10 +220,12 @@ export class MergeStatics extends Component {
             let subModel = subModels[i];
             let passes = subModel.passes
             for (let pi = 0; pi < passes.length; pi++) {
-                if (passes[pi].phase !== _phaseID) {
-                    continue;
+                let pass = passes[pi];
+                if (pass.phase === _shadowCasterPhaseID) {
+                    if (!model.castShadow) {
+                        continue;
+                    }
                 }
-
                 let instance = new InstancedBuffer(passes[pi]);
 
                 let matrices = block._matrices;
@@ -211,7 +239,13 @@ export class MergeStatics extends Component {
                     instance.merge(subModel, model.instancedAttributes, pi);
                 }
 
-                block._instances.push(instance);
+                let phase = passes[pi].phase;
+                let instances = block._instances.get(phase);
+                if (!instances) {
+                    instances = [];
+                    block._instances.set(phase, instances);
+                }
+                instances.push(instance);
             }
         }
     }

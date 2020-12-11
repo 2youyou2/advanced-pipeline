@@ -11,7 +11,7 @@
   "subMetas": {},
   "userData": {
     "importAsPlugin": false,
-    "moduleId": "project:///assets/advanced-pipeline/defines/ubo.js",
+    "moduleId": "project:///assets/libs/advanced-pipeline/defines/ubo.js",
     "importerSettings": 4
   }
 }

@@ -2,7 +2,7 @@
   "ver": "4.0.10",
   "importer": "typescript",
   "imported": true,
-  "uuid": "0a4861d6-30ec-4ba3-bc26-6ded50544757",
+  "uuid": "29532a54-8ff2-45d3-ab61-d81af0b31698",
   "files": [
     ".js",
     "editor.js",
@@ -11,7 +11,7 @@
   "subMetas": {},
   "userData": {
     "importAsPlugin": false,
-    "moduleId": "project:///assets/advanced-pipeline/stages/folige/merge-statics.js",
+    "moduleId": "project:///assets/libs/advanced-pipeline/utils/draw.js",
     "importerSettings": 4
   }
 }

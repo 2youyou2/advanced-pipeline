@@ -43,24 +43,7 @@ CCEffect %{
       propertyIndex: 0
       rasterizerState:
         cullMode: back
-  - name: transparent
-    passes:
-    - vert: vs:vert
-      frag: fs:frag
-      blendState:
-        targets:
-        - blend: true
-          blendSrc: src_alpha
-          blendDst: one_minus_src_alpha
-          blendSrcAlpha: src_alpha
-          blendDstAlpha: one_minus_src_alpha
       properties: *props
-    - vert: shadow-caster-vs:vert
-      frag: shadow-caster-fs:frag
-      phase: shadow-caster
-      propertyIndex: 0
-      rasterizerState:
-        cullMode: back
 }%
 
 CCProgram shared-ubos %{

@@ -11,7 +11,7 @@
   "subMetas": {},
   "userData": {
     "importAsPlugin": false,
-    "moduleId": "project:///assets/advanced-pipeline/stages/grass/src/grass-bender.js",
+    "moduleId": "project:///assets/libs/advanced-pipeline/stages/grass/src/grass-bender.js",
     "importerSettings": 4
   }
 }

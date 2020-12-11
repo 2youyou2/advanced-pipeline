@@ -11,7 +11,7 @@
   "subMetas": {},
   "userData": {
     "importAsPlugin": false,
-    "moduleId": "project:///assets/advanced-pipeline/stages/depth-buffer/depth-buffer-object.js",
+    "moduleId": "project:///assets/libs/advanced-pipeline/stages/depth-buffer/depth-buffer-object.js",
     "importerSettings": 4
   }
 }
