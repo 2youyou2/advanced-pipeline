@@ -1,0 +1,17 @@
+{
+  "ver": "4.0.10",
+  "importer": "typescript",
+  "imported": true,
+  "uuid": "8d456013-9c64-44ba-b988-08f67acf8cfb",
+  "files": [
+    ".js",
+    "editor.js",
+    ".trans"
+  ],
+  "subMetas": {},
+  "userData": {
+    "importAsPlugin": false,
+    "moduleId": "project:///assets/libs/advanced-pipeline/stages/instance/instance-block.js",
+    "importerSettings": 4
+  }
+}

@@ -1,14 +1,12 @@
-import { gfx, InstancedBuffer, PipelineStateManager, renderer } from 'cc';
+import { geometry, gfx, InstancedBuffer, PipelineStateManager, renderer } from 'cc';
 import { pipeline } from '../../defines/pipeline';
+import { InstanceBlockData } from './instance-block';
 
 const { DSPool, ShaderPool } = renderer;
 const { SetIndex } = pipeline;
 
-/**
- * @en Render queue for instanced batching
- * @zh 渲染合批队列。
- */
-export class RenderInstancedQueue {
+
+export class InstanceObjectQueue {
 
     /**
      * @en A set of instanced buffer
@@ -64,6 +62,34 @@ export class RenderInstancedQueue {
                 }
             }
             res = it.next();
+        }
+    }
+
+    public addBlocks (blocks: InstanceBlockData[], frustums: geometry.Frustum[], phase) {
+        for (let bbi = 0; bbi < blocks.length; bbi++) {
+            let block = blocks[bbi];
+
+            let phaseBundle = block._instances.get(phase);
+            if (!phaseBundle) {
+                continue;
+            }
+
+            let shouldAdd = true;
+            for (let fi = 0; fi < frustums.length; fi++) {
+                frustums[fi].accurate = true;
+                if (!geometry.intersect.aabbFrustumAccurate(block.worldBound, frustums[fi])) {
+                    shouldAdd = false;
+                    break;
+                }
+            }
+
+            if (!shouldAdd) {
+                continue;
+            }
+
+            phaseBundle.forEach(instance => {
+                this.queue.add(instance);
+            });
         }
     }
 }

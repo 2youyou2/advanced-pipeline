@@ -4,6 +4,7 @@ import { UNIFORM_DEPTH_BUFFER_MAP_BINDING, UBOCustomCommon } from '../../defines
 import { commitBuffer } from "../../utils/stage";
 import { getPhaseID, pipeline } from '../../defines/pipeline';
 import { EDITOR } from 'cc/env';
+import { Layers } from '../../defines/layer';
 
 const { ccclass, type, property } = _decorator;
 const { SetIndex } = pipeline;
@@ -135,6 +136,11 @@ export class DepthBufferStage extends RenderStage {
             return;
         }
 
+        const camera = view.camera;
+        if (!(camera.visibility & Layers.DepthBuffer)) {
+            return;
+        }
+
         if (EDITOR) {
             if (view.camera.node.name !== 'Editor Camera') {
                 return;
@@ -147,7 +153,6 @@ export class DepthBufferStage extends RenderStage {
 
         const pipeline = this._pipeline as ForwardPipeline;
         const device = pipeline.device;
-        const camera = view.camera;
 
         // command buffer
         const cmdBuff = pipeline.commandBuffers[0];

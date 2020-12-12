@@ -1,11 +1,13 @@
-import { _decorator, RenderView, ForwardStage, ForwardPipeline, Color, gfx, director, geometry } from "cc";
+import { _decorator, RenderView, ForwardStage, ForwardPipeline, gfx, renderer, GFXColor } from "cc";
+import { Layers } from '../../defines/layer';
 import { getPhaseID, pipeline } from '../../defines/pipeline';
 import { InstanceManager } from './instace-manager';
+import { InstanceObjectQueue } from './instanced-object-queue';
 
 const { ccclass, property } = _decorator;
 const { SetIndex } = pipeline;
 
-const colors: Color[] = [new Color(0, 0, 0, 1)];
+const colors: GFXColor[] = [{ x: 0, y: 0, z: 0, w: 1 }];
 
 let _phase = getPhaseID('default');
 
@@ -14,41 +16,32 @@ let _phase = getPhaseID('default');
 export class InstanceForwardStage extends ForwardStage {
     _name = 'InstanceForwardStage'
 
+    _instanceObjectQueue = new InstanceObjectQueue();
+
     resize () {
 
     }
 
-    renderInstances (view: RenderView) {
-        const camera = view.camera;
-
-        let instancedQueue = (this as any)._instancedQueue;
+    updateQueue (cmdBuff: gfx.CommandBuffer, camera: renderer.scene.Camera) {
+        let instancedQueue = this._instanceObjectQueue;
         instancedQueue.queue.clear();
 
-        let objects = InstanceManager.instance.objects;
-        for (let bi = 0; bi < objects.length; bi++) {
-            let object = objects[bi];
-            for (let di = 0; di < object.datas.length; di++) {
-                let blocks = object.datas[di].blocks;
-                for (let bbi = 0; bbi < blocks.length; bbi++) {
-                    let block = blocks[bbi];
-                    if (!geometry.intersect.aabbFrustum(block.worldBound, camera.frustum)) {
-                        continue;
-                    }
+        instancedQueue.addBlocks((globalThis.InstanceManager as typeof InstanceManager).instance.getBlocks(), [camera.frustum], _phase);
 
-                    let instances = block._instances.get(_phase);
-                    if (!instances) {
-                        continue;
-                    }
+        instancedQueue.uploadBuffers(cmdBuff);
+    }
 
-                    for (let ii = 0; ii < instances.length; ii++) {
-                        instancedQueue.queue.add(instances[ii]);
-                    }
-                }
-            }
+    renderInstances (view: RenderView) {
+        const camera = view.camera;
+        if (!(camera.visibility & Layers.Instance)) {
+            return;
         }
 
         const pipeline = this._pipeline as ForwardPipeline;
+        const cmdBuff = pipeline.commandBuffers[0];
         const device = pipeline.device;
+
+        this.updateQueue(cmdBuff, camera);
 
         const vp = camera.viewport;
 
@@ -62,9 +55,7 @@ export class InstanceForwardStage extends ForwardStage {
         renderArea.width = vp.width * w * pipeline.shadingScale;
         renderArea.height = vp.height * h * pipeline.shadingScale;
 
-        const cmdBuff = pipeline.commandBuffers[0];
-
-        instancedQueue.uploadBuffers(cmdBuff);
+        this._instanceObjectQueue.uploadBuffers(cmdBuff);
         (this as any)._additiveLightQueue.gatherLightPasses(view, cmdBuff);
 
         const framebuffer = view.window.framebuffer;
@@ -91,10 +82,9 @@ export class InstanceForwardStage extends ForwardStage {
 
         cmdBuff.bindDescriptorSet(SetIndex.GLOBAL, pipeline.descriptorSet);
 
-        instancedQueue.recordCommandBuffer(device, renderPass, cmdBuff);
+        this._instanceObjectQueue.recordCommandBuffer(device, renderPass, cmdBuff);
 
         cmdBuff.endRenderPass();
-        instancedQueue.queue.clear();
     }
 
     render (view: RenderView) {
@@ -105,10 +95,6 @@ export class InstanceForwardStage extends ForwardStage {
         view.camera.clearFlag = 0;
 
         super.render(view);
-
-        // clear instance queue
-        let instancedQueue = (this as any)._instancedQueue;
-        instancedQueue.clear();
 
         view.camera.clearFlag = clearFlag;
     }

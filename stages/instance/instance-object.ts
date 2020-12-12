@@ -1,5 +1,5 @@
 
-import { CCObject, Component, geometry, InstancedBuffer, instantiate, log, Mat4, Material, Mesh, MeshRenderer, Node, Vec3, _decorator } from 'cc';
+import { CCObject, Component, geometry, InstancedBuffer, instantiate, log, mat4, Mat4, Material, Mesh, MeshRenderer, Node, Quat, Vec3, _decorator } from 'cc';
 import { EDITOR } from 'cc/env';
 import { getPhaseID } from '../../defines/pipeline';
 import { debug, TechniqueNams } from '../../utils/draw';
@@ -7,26 +7,26 @@ import { InstanceManager } from './instace-manager';
 import { InstanceForwardStage } from './instance-forward-stage';
 const { ccclass, executeInEditMode, property, type } = _decorator;
 
-const _shadowCasterPhaseID = getPhaseID('shadow-caster');
-const _tempVec3 = new Vec3;
+// const _shadowCasterPhaseID = getPhaseID('shadow-caster');
+// const _tempVec3 = new Vec3;
 
-@ccclass('InstanceBlockData')
-export class InstanceBlockData extends CCObject {
-    @property
-    blockName = '';
+// @ccclass('InstanceBlockData')
+// export class InstanceBlockData extends CCObject {
+//     @property
+//     blockName = '';
 
-    @property
-    _matrices: Mat4[] = [];
+//     @property
+//     _matrices: Mat4[] = [];
 
-    @property
-    get count () {
-        return this._matrices.length;
-    }
+//     @property
+//     get count () {
+//         return this._matrices.length;
+//     }
 
-    _instances: Map<number, InstancedBuffer[]> = new Map;
+//     _instances: Map<number, InstancedBuffer[]> = new Map;
 
-    worldBound = new geometry.AABB
-}
+//     worldBound = new geometry.AABB
+// }
 
 @ccclass('InstanceData')
 export class InstanceData extends CCObject {
@@ -36,10 +36,33 @@ export class InstanceData extends CCObject {
     @type(Material)
     materials: Material[] = [];
 
-    @type(InstanceBlockData)
-    blocks: InstanceBlockData[] = [];
+    @property
+    casterShadow = MeshRenderer.ShadowCastingMode.OFF;
+
+    @property
+    assetId = '';
+
+    @property
+    _matrices: Mat4[] = [];
 }
 
+let _instanceID = 0;
+let _instanceTime = Date.now();
+function getAssetID (asset) {
+    if (!asset._instanceID_) {
+        if (asset._uuid) {
+            if (_instanceTime !== Date.now()) {
+                _instanceID = 0;
+                _instanceTime = Date.now();
+            }
+            asset._instanceID_ = `${_instanceTime}_${_instanceID++}`;
+        }
+        else {
+            asset._instanceID_ = asset._uuid;
+        }
+    }
+    return asset._instanceID_;
+}
 
 @ccclass('InstanceObject')
 @executeInEditMode
@@ -50,7 +73,10 @@ export class InstanceObject extends Component {
     @type(InstanceData)
     datas: InstanceData[] = [];
 
-    addData (mesh: Mesh, matrix: Mat4, materials: Material[]) {
+    addData (meshRenderer: MeshRenderer, matrix: Mat4) {
+        let mesh = meshRenderer.mesh;
+        let materials = meshRenderer.sharedMaterials;
+
         let datas = this.datas;
         let data: InstanceData | null = null;
         for (let i = 0; i < datas.length; i++) {
@@ -81,49 +107,38 @@ export class InstanceObject extends Component {
         if (!data) {
             data = new InstanceData();
             data.mesh = mesh;
-            data.materials = materials;
+            data.materials = materials as any;
+            data.casterShadow = meshRenderer.shadowCastingMode;
+            data.assetId = getAssetID(mesh);
+            for (let i = 0; i < materials.length; i++) {
+                data.assetId += '_' + getAssetID(materials[i]);
+            }
             this.datas.push(data);
         }
 
-        Mat4.getTranslation(_tempVec3, matrix);
-        let x = Math.floor(_tempVec3.x / this.blockSize);
-        let z = Math.floor(_tempVec3.z / this.blockSize);
-        let blockName = `${x}_${z}`;
+        data._matrices.push(new Mat4(matrix));
 
-        let block: InstanceBlockData | null = null;
-        for (let i = 0; i < data.blocks.length; i++) {
-            if (data.blocks[i].blockName === blockName) {
-                block = data.blocks[i];
-            }
-        }
-        if (!block) {
-            block = new InstanceBlockData();
-            block.blockName = blockName;
-            block.worldBound.center.set((x + 0.5) * this.blockSize, 0, (z + 0.5) * this.blockSize);
-            block.worldBound.halfExtents.set(this.blockSize / 2, 10000, this.blockSize / 2);
-            data.blocks.push(block);
-        }
-
-        block._matrices.push(new Mat4(matrix));
+        InstanceManager.instance.dirty = true;
     }
 
     clear () {
         this.datas.length = 0;
     }
 
-    _rebuildIndex = 0;
-    _blockIndex = 0;
+    // _rebuildIndex = 0;
+    // _blockIndex = 0;
 
-    _startTime = 0;
+    // _startTime = 0;
 
     rebuild () {
-        log('Start rebuild instances...');
-
-        this._startTime = Date.now();
+        // log('Start rebuild instances...');
 
         this.node.removeAllChildren();
-        this._rebuildIndex = 0;
-        this._blockIndex = 0;
+
+        // this._startTime = Date.now();
+
+        // this._rebuildIndex = 0;
+        // this._blockIndex = 0;
     }
 
     start () {
@@ -141,112 +156,113 @@ export class InstanceObject extends Component {
         }
     }
 
-    update () {
-        let drawer = debug.drawer;
+    // update () {
+    //     let drawer = debug.drawer;
 
-        drawer.technique = TechniqueNams.transparent;
-        drawer.color.set(255, 255, 255, 100);
+    //     drawer.technique = TechniqueNams.transparent;
+    //     drawer.color.set(255, 255, 255, 30);
 
-        let object = this;
-        for (let di = 0; di < object.datas.length; di++) {
-            let blocks = object.datas[di].blocks;
-            for (let bbi = 0; bbi < blocks.length; bbi++) {
-                let block = blocks[bbi];
-                drawer.matrix.identity();
-                drawer.matrix.translate(block.worldBound.center);
-                drawer.box({
-                    width: this.blockSize,
-                    height: this.blockSize,
-                    length: this.blockSize,
-                })
-            }
-        }
+    //     let object = this;
+    //     for (let di = 0; di < object.datas.length; di++) {
+    //         let blocks = object.datas[di].blocks;
+    //         for (let bbi = 0; bbi < blocks.length; bbi++) {
+    //             let block = blocks[bbi];
+    //             // drawer.matrix.identity();
+    //             // Mat4.translate(drawer.matrix, drawer.matrix, block.worldBound.center)
+    //             drawer.matrix.fromRTS(Quat.IDENTITY, block.worldBound.center, Vec3.ONE);
+    //             drawer.box({
+    //                 width: this.blockSize,
+    //                 height: this.blockSize,
+    //                 length: this.blockSize,
+    //             })
+    //         }
+    //     }
 
-        if (this._rebuildIndex >= this.datas.length) {
-            if (this._startTime !== 0) {
-                log(`End rebuild instances : ${(Date.now() - this._startTime) / 1000}s.`);
-                this._startTime = 0;
-            }
-            return;
-        }
+    //     if (this._rebuildIndex >= this.datas.length) {
+    //         if (this._startTime !== 0) {
+    //             log(`End rebuild instances : ${(Date.now() - this._startTime) / 1000}s.`);
+    //             this._startTime = 0;
+    //         }
+    //         return;
+    //     }
 
-        if (EDITOR) {
-            (window as any).cce.Engine.repaintInEditMode();
-        }
+    //     if (EDITOR) {
+    //         (window as any).cce.Engine.repaintInEditMode();
+    //     }
 
-        let data = this.datas[this._rebuildIndex];
+    //     let data = this.datas[this._rebuildIndex];
 
-        log(`Merge Statics Mesh : ${this._rebuildIndex} - ${this.datas.length}, ${this._blockIndex} - ${data.blocks.length}`);
+    //     log(`Merge Statics Mesh : ${this._rebuildIndex} - ${this.datas.length}, ${this._blockIndex} - ${data.blocks.length}`);
 
-        let mesh = data.mesh;
-        let meshName = mesh ? (mesh.name + '_' + mesh._uuid) : '';
+    //     let mesh = data.mesh;
+    //     let meshName = mesh ? (mesh.name + '_' + mesh._uuid) : '';
 
-        if (!mesh || !mesh.loaded) {
-            let failedNode = new Node('Failed - ' + meshName);
-            failedNode.parent = this.node;
+    //     if (!mesh || !mesh.loaded) {
+    //         let failedNode = new Node('Failed - ' + meshName);
+    //         failedNode.parent = this.node;
 
-            this._rebuildIndex++;
-            this._blockIndex = 0;
-            return;
-        }
+    //         this._rebuildIndex++;
+    //         this._blockIndex = 0;
+    //         return;
+    //     }
 
-        let meshChild = this.node.children[this._rebuildIndex];
-        if (!meshChild) {
-            meshChild = new Node(meshName);
+    //     let meshChild = this.node.children[this._rebuildIndex];
+    //     if (!meshChild) {
+    //         meshChild = new Node(meshName);
 
-            meshChild.parent = this.node;
+    //         meshChild.parent = this.node;
 
-            let mr = meshChild.addComponent(MeshRenderer);
-            mr.mesh = mesh;
+    //         let mr = meshChild.addComponent(MeshRenderer);
+    //         mr.mesh = mesh;
 
-            for (let mi = 0; mi < data.materials.length; mi++) {
-                mr.setMaterial(data.materials[mi], mi);
-            }
+    //         for (let mi = 0; mi < data.materials.length; mi++) {
+    //             mr.setMaterial(data.materials[mi], mi);
+    //         }
 
-            mr.enabled = false;
-        }
+    //         mr.enabled = false;
+    //     }
 
-        let block = data.blocks[this._blockIndex++];
-        if (!block) {
-            this._rebuildIndex++;
-            this._blockIndex = 0;
-            return;
-        }
+    //     let block = data.blocks[this._blockIndex++];
+    //     if (!block) {
+    //         this._rebuildIndex++;
+    //         this._blockIndex = 0;
+    //         return;
+    //     }
 
-        let mr = meshChild.getComponent(MeshRenderer);
-        let model = mr!.model!;
-        let subModels = model.subModels!;
-        for (let i = 0; i < subModels.length; i++) {
-            let subModel = subModels[i];
-            let passes = subModel.passes
-            for (let pi = 0; pi < passes.length; pi++) {
-                let pass = passes[pi];
-                if (pass.phase === _shadowCasterPhaseID) {
-                    if (!model.castShadow) {
-                        continue;
-                    }
-                }
-                let instance = new InstancedBuffer(passes[pi]);
+    //     let mr = meshChild.getComponent(MeshRenderer);
+    //     let model = mr!.model!;
+    //     let subModels = model.subModels!;
+    //     for (let i = 0; i < subModels.length; i++) {
+    //         let subModel = subModels[i];
+    //         let passes = subModel.passes
+    //         for (let pi = 0; pi < passes.length; pi++) {
+    //             let pass = passes[pi];
+    //             if (pass.phase === _shadowCasterPhaseID) {
+    //                 if (!model.castShadow) {
+    //                     continue;
+    //                 }
+    //             }
+    //             let instance = new InstancedBuffer(passes[pi]);
 
-                let matrices = block._matrices;
-                for (let mi = 0; mi < matrices.length; mi++) {
-                    let matrix = matrices[mi];
-                    meshChild.worldMatrix.set(matrix);
+    //             let matrices = block._matrices;
+    //             for (let mi = 0; mi < matrices.length; mi++) {
+    //                 let matrix = matrices[mi];
+    //                 meshChild.worldMatrix.set(matrix);
 
-                    (model as any)._transformUpdated = true;
-                    model.updateUBOs(0);
+    //                 (model as any)._transformUpdated = true;
+    //                 model.updateUBOs(0);
 
-                    instance.merge(subModel, model.instancedAttributes, pi);
-                }
+    //                 instance.merge(subModel, model.instancedAttributes, pi);
+    //             }
 
-                let phase = passes[pi].phase;
-                let instances = block._instances.get(phase);
-                if (!instances) {
-                    instances = [];
-                    block._instances.set(phase, instances);
-                }
-                instances.push(instance);
-            }
-        }
-    }
+    //             let phase = passes[pi].phase;
+    //             let instances = block._instances.get(phase);
+    //             if (!instances) {
+    //                 instances = [];
+    //                 block._instances.set(phase, instances);
+    //             }
+    //             instances.push(instance);
+    //         }
+    //     }
+    // }
 }

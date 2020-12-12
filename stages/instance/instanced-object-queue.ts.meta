@@ -2,7 +2,7 @@
   "ver": "4.0.10",
   "importer": "typescript",
   "imported": true,
-  "uuid": "344d7c1f-294a-4c1e-a98b-51499954d13b",
+  "uuid": "fd9db788-7820-44fc-9eeb-7cb6fe65ab7e",
   "files": [
     ".js",
     "editor.js",
@@ -11,7 +11,7 @@
   "subMetas": {},
   "userData": {
     "importAsPlugin": false,
-    "moduleId": "project:///assets/libs/advanced-pipeline/stages/instance/render-instanced-queue.js",
+    "moduleId": "project:///assets/libs/advanced-pipeline/stages/instance/instanced-object-queue.js",
     "importerSettings": 4
   }
 }

@@ -1,8 +1,9 @@
 import { _decorator, Component, Node, Camera, renderer, Color, CCObject, Vec3, GFXClearFlag } from 'cc';
+import { Layers } from '../../../defines/layer';
 import { GrassBendRenderStage } from '../grass-bend-render-stage';
 const { ccclass, property, executeInEditMode, type } = _decorator;
 
-const neutralVector = new Color(0.5*255, 0, 0.5*255, 0);
+const neutralVector = new Color(0.5 * 255, 0, 0.5 * 255, 0);
 
 @ccclass('GrassBenderRenderer')
 @executeInEditMode
@@ -58,7 +59,7 @@ export class GrassBenderRenderer extends Component {
             camera.far = this.range * 2;
             camera.clearColor = neutralVector;
             camera.clearFlags = GFXClearFlag.NONE;
-            camera.visibility = 0;
+            camera.visibility = Layers.GrassBend;
             camera.priority = -100;
 
             this._renderCamera = camera;

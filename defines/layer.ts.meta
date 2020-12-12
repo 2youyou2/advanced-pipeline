@@ -1,0 +1,17 @@
+{
+  "ver": "4.0.10",
+  "importer": "typescript",
+  "imported": true,
+  "uuid": "b17452f4-e663-41b8-a42e-120dcc4e6cb1",
+  "files": [
+    ".js",
+    "editor.js",
+    ".trans"
+  ],
+  "subMetas": {},
+  "userData": {
+    "importAsPlugin": false,
+    "moduleId": "project:///assets/libs/advanced-pipeline/defines/layer.js",
+    "importerSettings": 4
+  }
+}

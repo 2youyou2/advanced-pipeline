@@ -1,13 +1,13 @@
-import { _decorator, RenderView, ShadowStage, ForwardPipeline, Color, gfx, director, geometry, renderer, TERRAIN_HEIGHT_BASE, Camera, Scene, RenderPipeline } from "cc";
+import { _decorator, RenderView, ShadowStage, ForwardPipeline, gfx, renderer, GFXColor } from "cc";
+import { Layers } from '../../defines/layer';
 import { getPhaseID, pipeline } from '../../defines/pipeline';
 import { InstanceManager } from './instace-manager';
-import { InstanceObject } from './instance-object';
-import { RenderInstancedQueue } from './render-instanced-queue';
+import { InstanceObjectQueue } from './instanced-object-queue';
 
 const { ccclass, property } = _decorator;
 const { SetIndex, UBOShadow } = pipeline;
 
-const colors: Color[] = [new Color(1, 1, 1, 1)];
+const colors: GFXColor[] = [{ x: 1, y: 1, z: 1, w: 1 }];
 
 const _phase = getPhaseID('shadow-caster');
 
@@ -16,44 +16,21 @@ const _phase = getPhaseID('shadow-caster');
 export class InstanceShadowStage extends ShadowStage {
     _name = 'InstanceShadowStage'
 
-    _instancedQueue = new RenderInstancedQueue();
+    _instanceObjectQueue = new InstanceObjectQueue();
 
     resize () {
 
     }
 
-    updateQueue (cmdBuff: gfx.CommandBuffer, camera: renderer.scene.Camera, pipeline: RenderPipeline) {
-        let instancedQueue = this._instancedQueue;
+    updateQueue (cmdBuff: gfx.CommandBuffer, camera: renderer.scene.Camera) {
+        if (!(camera.visibility & Layers.Instance)) {
+            return;
+        }
+
+        let instancedQueue = this._instanceObjectQueue;
         instancedQueue.queue.clear();
 
-        let shadowMapBuffer = pipeline.descriptorSet.getBuffer(UBOShadow.BINDING);
-
-        let objects = InstanceManager.instance.objects;
-        for (let bi = 0; bi < objects.length; bi++) {
-            let object = objects[bi];
-            for (let di = 0; di < object.datas.length; di++) {
-                let blocks = object.datas[di].blocks;
-                for (let bbi = 0; bbi < blocks.length; bbi++) {
-                    let block = blocks[bbi];
-                    if (!geometry.intersect.aabbFrustum(block.worldBound, camera.frustum)) {
-                        continue;
-                    }
-
-                    let instances = block._instances.get(_phase);
-                    if (!instances) {
-                        continue;
-                    }
-                    for (let ii = 0; ii < instances.length; ii++) {
-                        let instance = instances[ii];
-
-                        let descriptorSet = renderer.DSPool.get(instance.instances[0]?.hDescriptorSet) as gfx.DescriptorSet;
-                        descriptorSet?.bindBuffer(UBOShadow.BINDING, shadowMapBuffer);
-
-                        instancedQueue.queue.add(instance);
-                    }
-                }
-            }
-        }
+        instancedQueue.addBlocks((globalThis.InstanceManager as typeof InstanceManager).instance.getBlocks(), [camera.frustum], _phase);
 
         instancedQueue.uploadBuffers(cmdBuff);
     }
@@ -69,7 +46,7 @@ export class InstanceShadowStage extends ShadowStage {
         const additiveShadowQueue = (this as any)._additiveShadowQueue;
         additiveShadowQueue.gatherLightPasses((this as any)._light, cmdBuff);
 
-        this.updateQueue(cmdBuff, camera, pipeline);
+        this.updateQueue(cmdBuff, camera);
 
         const vp = camera.viewport;
 
@@ -94,7 +71,7 @@ export class InstanceShadowStage extends ShadowStage {
         cmdBuff.bindDescriptorSet(SetIndex.GLOBAL, pipeline.descriptorSet);
 
         additiveShadowQueue.recordCommandBuffer(device, renderPass, cmdBuff);
-        this._instancedQueue.recordCommandBuffer(device, renderPass, cmdBuff);
+        this._instanceObjectQueue.recordCommandBuffer(device, renderPass, cmdBuff);
 
         cmdBuff.endRenderPass();
     }
