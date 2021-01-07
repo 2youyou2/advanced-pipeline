@@ -64,6 +64,12 @@ function getAssetID (asset) {
     return asset._instanceID_;
 }
 
+interface IMeshRenderer {
+    mesh: Mesh
+    sharedMaterials: Material[]
+    shadowCastingMode: MeshRenderer.ShadowCastingMode
+}
+
 @ccclass('InstanceObject')
 @executeInEditMode
 export class InstanceObject extends Component {
@@ -73,9 +79,10 @@ export class InstanceObject extends Component {
     @type(InstanceData)
     datas: InstanceData[] = [];
 
-    addData (meshRenderer: MeshRenderer, matrix: Mat4) {
+    addData (meshRenderer: IMeshRenderer, matrix: Mat4) {
         let mesh = meshRenderer.mesh;
         let materials = meshRenderer.sharedMaterials;
+        let casterShadow = meshRenderer.shadowCastingMode;
 
         let datas = this.datas;
         let data: InstanceData | null = null;
@@ -108,7 +115,7 @@ export class InstanceObject extends Component {
             data = new InstanceData();
             data.mesh = mesh;
             data.materials = materials as any;
-            data.casterShadow = meshRenderer.shadowCastingMode;
+            data.casterShadow = casterShadow;
             data.assetId = getAssetID(mesh);
             for (let i = 0; i < materials.length; i++) {
                 data.assetId += '_' + getAssetID(materials[i]);

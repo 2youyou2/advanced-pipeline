@@ -1,4 +1,4 @@
-import { _decorator, RenderStage, GFXRect, GFXColor, ForwardPipeline, RenderView, ModelComponent, Material, renderer, PipelineStateManager, GFXRenderPass, GFXFormat, GFXLoadOp, GFXStoreOp, GFXTextureLayout, GFXShaderStageFlagBit, GFXDescriptorType, GFXType, GFXFilter, GFXAddress, RenderFlow, RenderPipeline, director, Vec4, GFXBufferUsageBit, GFXMemoryUsageBit, GFXClearFlag, GFXCullMode, RenderTexture, GFXUniformSampler, GFXDescriptorSetLayoutBinding, GFXUniformBlock, GFXUniform, GFXBufferInfo, GFXRenderPassInfo, GFXColorAttachment, GFXDepthStencilAttachment, Mat4, Terrain, GFXCommandBuffer, GFXDevice } from "cc";
+import { _decorator, RenderStage, GFXRect, GFXColor, ForwardPipeline, RenderView, ModelComponent, Material, renderer, PipelineStateManager, GFXRenderPass, GFXFormat, GFXLoadOp, GFXStoreOp, GFXTextureLayout, GFXShaderStageFlagBit, GFXDescriptorType, GFXType, GFXFilter, GFXAddress, RenderFlow, RenderPipeline, director, Vec4, GFXBufferUsageBit, GFXMemoryUsageBit, GFXClearFlag, GFXCullMode, RenderTexture, GFXUniformSampler, GFXDescriptorSetLayoutBinding, GFXUniformBlock, GFXUniform, GFXBufferInfo, GFXRenderPassInfo, GFXColorAttachment, GFXDepthStencilAttachment, Mat4, Terrain, GFXCommandBuffer, GFXDevice, geometry } from "cc";
 import { DepthBufferObject } from './depth-buffer-object';
 import { UNIFORM_DEPTH_BUFFER_MAP_BINDING, UBOCustomCommon } from '../../defines/ubo';
 import { commitBuffer } from "../../utils/stage";
@@ -185,7 +185,15 @@ export class DepthBufferStage extends RenderStage {
             if (tr) {
                 const blocks = tr.getBlocks();
                 for (let bi = 0; bi < blocks.length; bi++) {
-                    commitBuffer((blocks[bi] as any)._renderable._model, cmdBuff, device, renderPass, _phaseID);
+                    let model = (blocks[bi] as any)._renderable._model as renderer.scene.Model;
+                    if (!model.modelBounds) {
+                        continue;
+                    }
+                    camera.frustum.accurate = true;
+                    if (!geometry.intersect.aabbFrustumAccurate(model.modelBounds, camera.frustum)) {
+                        continue;
+                    }
+                    commitBuffer(model, cmdBuff, device, renderPass, _phaseID);
                     continue;
                 }
             }
