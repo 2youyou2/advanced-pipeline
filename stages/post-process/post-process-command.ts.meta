@@ -1,0 +1,12 @@
+{
+  "ver": "4.0.21",
+  "importer": "typescript",
+  "imported": true,
+  "uuid": "2050cc5b-7104-40fc-b4d9-dc8b118424b8",
+  "files": [],
+  "subMetas": {},
+  "userData": {
+    "importAsPlugin": false,
+    "moduleId": "project:///assets/shader-lib/post-process/post-process-command.js"
+  }
+}

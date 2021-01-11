@@ -1,0 +1,12 @@
+{
+  "ver": "4.0.21",
+  "importer": "typescript",
+  "imported": true,
+  "uuid": "39c012d3-7d0b-45e4-b255-5ad08964f509",
+  "files": [],
+  "subMetas": {},
+  "userData": {
+    "importAsPlugin": false,
+    "moduleId": "project:///assets/shader-lib/post-process/post-process-flow.js"
+  }
+}

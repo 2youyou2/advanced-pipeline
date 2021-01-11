@@ -219,4 +219,4 @@ class InstanceManagerComponent extends Component {
     }
 }
 
-globalThis.InstanceManager = InstanceManager;
+(globalThis as any).InstanceManager = InstanceManager;

@@ -1,4 +1,4 @@
-import { _decorator, RenderView, ShadowStage, ForwardPipeline, gfx, renderer, GFXColor } from "cc";
+import { _decorator, ShadowStage, ForwardPipeline, gfx, renderer, GFXColor } from "cc";
 import { Layers } from '../../defines/layer';
 import { getPhaseID, pipeline } from '../../defines/pipeline';
 import { InstanceManager } from './instace-manager';
@@ -30,18 +30,17 @@ export class InstanceShadowStage extends ShadowStage {
         let instancedQueue = this._instanceObjectQueue;
         instancedQueue.queue.clear();
 
-        instancedQueue.addBlocks((globalThis.InstanceManager as typeof InstanceManager).instance.getBlocks(), [camera.frustum], _phase);
+        instancedQueue.addBlocks(((globalThis as any).InstanceManager as typeof InstanceManager).instance.getBlocks(), [camera.frustum], _phase);
 
         instancedQueue.uploadBuffers(cmdBuff);
     }
 
-    render (view: RenderView) {
+    render (camera: renderer.scene.Camera) {
         if (!(this as any)._light || !(this as any)._shadowFrameBuffer) { return; }
 
         const pipeline = this._pipeline as ForwardPipeline;
         const device = pipeline.device;
         const cmdBuff = pipeline.commandBuffers[0];
-        const camera = view.camera;
 
         const additiveShadowQueue = (this as any)._additiveShadowQueue;
         additiveShadowQueue.gatherLightPasses((this as any)._light, cmdBuff);

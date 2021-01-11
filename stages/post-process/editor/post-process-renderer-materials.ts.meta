@@ -1,0 +1,12 @@
+{
+  "ver": "4.0.21",
+  "importer": "typescript",
+  "imported": true,
+  "uuid": "c949724f-7b17-4805-a81a-c5c913e20b02",
+  "files": [],
+  "subMetas": {},
+  "userData": {
+    "importAsPlugin": false,
+    "moduleId": "project:///assets/shader-lib/post-process/editor/post-process-renderer-materials.js"
+  }
+}

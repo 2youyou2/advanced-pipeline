@@ -54,6 +54,34 @@ export const UNIFORM_DEPTH_BUFFER_MAP_DESCRIPTOR = new GFXDescriptorSetLayoutBin
 globalDescriptorSetLayout.layouts[UNIFORM_DEPTH_BUFFER_MAP_NAME] = UNIFORM_DEPTH_BUFFER_MAP_LAYOUT;
 globalDescriptorSetLayout.bindings[UNIFORM_DEPTH_BUFFER_MAP_BINDING] = UNIFORM_DEPTH_BUFFER_MAP_DESCRIPTOR;
 
+export const UNIFORM_PE_ORIGIN_MAP_BINDING = BindingStart + BindingIndex++;
+export const UNIFORM_PE_ORIGIN_MAP_NAME = 'cc_pe_origin_texture';
+export const UNIFORM_PE_ORIGIN_MAP_LAYOUT = new GFXUniformSampler(SetIndex.MATERIAL, UNIFORM_PE_ORIGIN_MAP_BINDING, UNIFORM_PE_ORIGIN_MAP_NAME, GFXType.SAMPLER2D, 1);
+export const UNIFORM_PE_ORIGIN_MAP_DESCRIPTOR = new GFXDescriptorSetLayoutBinding(UNIFORM_PE_ORIGIN_MAP_BINDING, GFXDescriptorType.SAMPLER, 1, GFXShaderStageFlagBit.FRAGMENT);
+globalDescriptorSetLayout.layouts[UNIFORM_PE_ORIGIN_MAP_NAME] = UNIFORM_PE_ORIGIN_MAP_LAYOUT;
+globalDescriptorSetLayout.bindings[UNIFORM_PE_ORIGIN_MAP_BINDING] = UNIFORM_PE_ORIGIN_MAP_DESCRIPTOR;
+
+export const UNIFORM_PE_INPUT_MAP_BINDING = BindingStart + BindingIndex++;
+export const UNIFORM_PE_INPUT_MAP_NAME = 'cc_pe_input_texture';
+export const UNIFORM_PE_INPUT_MAP_LAYOUT = new GFXUniformSampler(SetIndex.MATERIAL, UNIFORM_PE_INPUT_MAP_BINDING, UNIFORM_PE_INPUT_MAP_NAME, GFXType.SAMPLER2D, 1);
+export const UNIFORM_PE_INPUT_MAP_DESCRIPTOR = new GFXDescriptorSetLayoutBinding(UNIFORM_PE_INPUT_MAP_BINDING, GFXDescriptorType.SAMPLER, 1, GFXShaderStageFlagBit.FRAGMENT);
+globalDescriptorSetLayout.layouts[UNIFORM_PE_INPUT_MAP_NAME] = UNIFORM_PE_INPUT_MAP_LAYOUT;
+globalDescriptorSetLayout.bindings[UNIFORM_PE_INPUT_MAP_BINDING] = UNIFORM_PE_INPUT_MAP_DESCRIPTOR;
+
+export const UNIFORM_PE_CUSTOM_1_MAP_BINDING = BindingStart + BindingIndex++;
+export const UNIFORM_PE_CUSTOM_1_MAP_NAME = 'cc_pe_custom_texture_1';
+export const UNIFORM_PE_CUSTOM_1_MAP_LAYOUT = new GFXUniformSampler(SetIndex.MATERIAL, UNIFORM_PE_CUSTOM_1_MAP_BINDING, UNIFORM_PE_CUSTOM_1_MAP_NAME, GFXType.SAMPLER2D, 1);
+export const UNIFORM_PE_CUSTOM_1_MAP_DESCRIPTOR = new GFXDescriptorSetLayoutBinding(UNIFORM_PE_CUSTOM_1_MAP_BINDING, GFXDescriptorType.SAMPLER, 1, GFXShaderStageFlagBit.FRAGMENT);
+globalDescriptorSetLayout.layouts[UNIFORM_PE_CUSTOM_1_MAP_NAME] = UNIFORM_PE_CUSTOM_1_MAP_LAYOUT;
+globalDescriptorSetLayout.bindings[UNIFORM_PE_CUSTOM_1_MAP_BINDING] = UNIFORM_PE_CUSTOM_1_MAP_DESCRIPTOR;
+
+export const UNIFORM_PE_CUSTOM_2_MAP_BINDING = BindingStart + BindingIndex++;
+export const UNIFORM_PE_CUSTOM_2_MAP_NAME = 'cc_pe_custom_texture_2';
+export const UNIFORM_PE_CUSTOM_2_MAP_LAYOUT = new GFXUniformSampler(SetIndex.MATERIAL, UNIFORM_PE_CUSTOM_2_MAP_BINDING, UNIFORM_PE_CUSTOM_2_MAP_NAME, GFXType.SAMPLER2D, 1);
+export const UNIFORM_PE_CUSTOM_2_MAP_DESCRIPTOR = new GFXDescriptorSetLayoutBinding(UNIFORM_PE_CUSTOM_2_MAP_BINDING, GFXDescriptorType.SAMPLER, 1, GFXShaderStageFlagBit.FRAGMENT);
+globalDescriptorSetLayout.layouts[UNIFORM_PE_CUSTOM_2_MAP_NAME] = UNIFORM_PE_CUSTOM_2_MAP_LAYOUT;
+globalDescriptorSetLayout.bindings[UNIFORM_PE_CUSTOM_2_MAP_BINDING] = UNIFORM_PE_CUSTOM_2_MAP_DESCRIPTOR;
+
 
 // final
 bindingMappingInfo.samplerOffsets[1] += BindingIndex;

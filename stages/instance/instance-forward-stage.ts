@@ -1,4 +1,4 @@
-import { _decorator, RenderView, ForwardStage, ForwardPipeline, gfx, renderer, GFXColor } from "cc";
+import { _decorator, ForwardStage, ForwardPipeline, gfx, renderer, GFXColor, __private } from "cc";
 import { Layers } from '../../defines/layer';
 import { getPhaseID, pipeline } from '../../defines/pipeline';
 import { InstanceManager } from './instace-manager';
@@ -26,13 +26,12 @@ export class InstanceForwardStage extends ForwardStage {
         let instancedQueue = this._instanceObjectQueue;
         instancedQueue.queue.clear();
 
-        instancedQueue.addBlocks((globalThis.InstanceManager as typeof InstanceManager).instance.getBlocks(), [camera.frustum], _phase);
+        instancedQueue.addBlocks(((globalThis as any).InstanceManager as typeof InstanceManager).instance.getBlocks(), [camera.frustum], _phase);
 
         instancedQueue.uploadBuffers(cmdBuff);
     }
 
-    renderInstances (view: RenderView) {
-        const camera = view.camera;
+    renderInstances (camera: renderer.scene.Camera) {
         if (!(camera.visibility & Layers.Instance)) {
             return;
         }
@@ -44,10 +43,10 @@ export class InstanceForwardStage extends ForwardStage {
         this.updateQueue(cmdBuff, camera);
 
         const vp = camera.viewport;
-
+        const window = camera.window! as any as __private.cocos_core_renderer_core_render_window_RenderWindow;
         // render area is not oriented
-        const w = view.window.hasOnScreenAttachments && device.surfaceTransform % 2 ? camera.height : camera.width;
-        const h = view.window.hasOnScreenAttachments && device.surfaceTransform % 2 ? camera.width : camera.height;
+        const w = window.hasOnScreenAttachments && device.surfaceTransform % 2 ? camera.height : camera.width;
+        const h = window.hasOnScreenAttachments && device.surfaceTransform % 2 ? camera.width : camera.height;
 
         let renderArea = (this as any)._renderArea!;
         renderArea.x = vp.x * w;
@@ -56,9 +55,9 @@ export class InstanceForwardStage extends ForwardStage {
         renderArea.height = vp.height * h * pipeline.shadingScale;
 
         this._instanceObjectQueue.uploadBuffers(cmdBuff);
-        (this as any)._additiveLightQueue.gatherLightPasses(view, cmdBuff);
+        (this as any)._additiveLightQueue.gatherLightPasses(camera, cmdBuff);
 
-        const framebuffer = view.window.framebuffer;
+        const framebuffer = window.framebuffer;
         const renderPass = framebuffer.colorTextures[0] ? framebuffer.renderPass : pipeline.getRenderPass(camera.clearFlag);
 
         if (camera.clearFlag & gfx.ClearFlag.COLOR) {
@@ -87,16 +86,16 @@ export class InstanceForwardStage extends ForwardStage {
         cmdBuff.endRenderPass();
     }
 
-    render (view: RenderView) {
-        this.renderInstances(view);
+    render (camera: renderer.scene.Camera) {
+        this.renderInstances(camera);
 
         // should not clear the already draw content
-        let clearFlag = view.camera.clearFlag;
-        view.camera.clearFlag = 0;
+        let clearFlag = camera.clearFlag;
+        camera.clearFlag = 0;
 
-        super.render(view);
+        super.render(camera);
 
-        view.camera.clearFlag = clearFlag;
+        camera.clearFlag = clearFlag;
     }
 
     rebuild () {

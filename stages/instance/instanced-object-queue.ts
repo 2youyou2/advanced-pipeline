@@ -27,7 +27,7 @@ export class InstanceObjectQueue {
         this.queue.clear();
     }
 
-    public uploadBuffers (cmdBuff) {
+    public uploadBuffers (cmdBuff: gfx.CommandBuffer) {
         const it = this.queue.values(); let res = it.next();
         while (!res.done) {
             if (res.value.hasPendingModels) res.value.uploadBuffers(cmdBuff);
@@ -65,7 +65,7 @@ export class InstanceObjectQueue {
         }
     }
 
-    public addBlocks (blocks: InstanceBlockData[], frustums: geometry.Frustum[], phase) {
+    public addBlocks (blocks: InstanceBlockData[], frustums: geometry.Frustum[], phase: number) {
         for (let bbi = 0; bbi < blocks.length; bbi++) {
             let block = blocks[bbi];
 

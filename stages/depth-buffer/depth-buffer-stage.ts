@@ -1,4 +1,4 @@
-import { _decorator, RenderStage, GFXRect, GFXColor, ForwardPipeline, RenderView, ModelComponent, Material, renderer, PipelineStateManager, GFXRenderPass, GFXFormat, GFXLoadOp, GFXStoreOp, GFXTextureLayout, GFXShaderStageFlagBit, GFXDescriptorType, GFXType, GFXFilter, GFXAddress, RenderFlow, RenderPipeline, director, Vec4, GFXBufferUsageBit, GFXMemoryUsageBit, GFXClearFlag, GFXCullMode, RenderTexture, GFXUniformSampler, GFXDescriptorSetLayoutBinding, GFXUniformBlock, GFXUniform, GFXBufferInfo, GFXRenderPassInfo, GFXColorAttachment, GFXDepthStencilAttachment, Mat4, Terrain, GFXCommandBuffer, GFXDevice, geometry } from "cc";
+import { _decorator, RenderStage, GFXRect, GFXColor, ForwardPipeline, ModelComponent, renderer, GFXLoadOp, GFXTextureLayout, GFXFilter, GFXAddress, RenderFlow, RenderPipeline, director, GFXBufferUsageBit, GFXMemoryUsageBit, GFXClearFlag, GFXCullMode, RenderTexture, GFXBufferInfo, GFXRenderPassInfo, GFXColorAttachment, GFXDepthStencilAttachment, Terrain, geometry } from "cc";
 import { DepthBufferObject } from './depth-buffer-object';
 import { UNIFORM_DEPTH_BUFFER_MAP_BINDING, UBOCustomCommon } from '../../defines/ubo';
 import { commitBuffer } from "../../utils/stage";
@@ -10,15 +10,6 @@ const { ccclass, type, property } = _decorator;
 const { SetIndex } = pipeline;
 
 const colors: GFXColor[] = [{ x: 1, y: 1, z: 1, w: 1 }];
-
-const _samplerInfo = [
-    GFXFilter.LINEAR,
-    GFXFilter.LINEAR,
-    GFXFilter.NONE,
-    GFXAddress.CLAMP,
-    GFXAddress.CLAMP,
-    GFXAddress.CLAMP,
-];
 
 
 const _colorAttachment = new GFXColorAttachment();
@@ -81,9 +72,7 @@ export class DepthBufferStage extends RenderStage {
             renderTexture.reset({ width, height, passInfo: _renderPassInfo })
             this._renderTexture = renderTexture;
 
-            const samplerHash = renderer.genSamplerHash(_samplerInfo);
-            const sampler = renderer.samplerLib.getSampler(device, samplerHash);
-            pipeline.descriptorSet.bindSampler(UNIFORM_DEPTH_BUFFER_MAP_BINDING, sampler);
+            pipeline.descriptorSet.bindSampler(UNIFORM_DEPTH_BUFFER_MAP_BINDING, renderTexture.getGFXSampler());
             pipeline.descriptorSet.bindTexture(UNIFORM_DEPTH_BUFFER_MAP_BINDING, renderTexture.getGFXTexture()!);
         }
 
@@ -98,7 +87,7 @@ export class DepthBufferStage extends RenderStage {
         }
     }
 
-    updateUBO (view?: RenderView) {
+    updateUBO (camera?: renderer.scene.Camera) {
         const pipeline = this._pipeline as ForwardPipeline;
         const device = pipeline.device;
 
@@ -115,9 +104,7 @@ export class DepthBufferStage extends RenderStage {
             renderTexture.resize(width, height);
         }
 
-        if (view) {
-            let camera = view.camera;
-
+        if (camera) {
             // let shadowUBO: Float32Array = (pipeline as any)._shadowUBO;
             // Mat4.toArray(shadowUBO, view.camera.matViewProj, UBOShadow.MAT_LIGHT_VIEW_PROJ_OFFSET);
             // pipeline.commandBuffers[0].updateBuffer(pipeline.descriptorSet.getBuffer(UBOShadow.BINDING), shadowUBO);
@@ -131,23 +118,22 @@ export class DepthBufferStage extends RenderStage {
         }
     }
 
-    render (view: RenderView) {
+    render (camera: renderer.scene.Camera) {
         if (!this.enabled) {
             return;
         }
 
-        const camera = view.camera;
         if (!(camera.visibility & Layers.DepthBuffer)) {
             return;
         }
 
         if (EDITOR) {
-            if (view.camera.node.name !== 'Editor Camera') {
+            if (camera.node.name !== 'Editor Camera') {
                 return;
             }
         }
 
-        this.updateUBO(view);
+        this.updateUBO(camera);
 
         let renderTexture = this._renderTexture!;
 

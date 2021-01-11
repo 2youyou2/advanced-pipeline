@@ -1,4 +1,4 @@
-import { _decorator, RenderStage, GFXRect, GFXColor, GFXCommandBuffer, ForwardPipeline, RenderView, ModelComponent, Material, renderer, PipelineStateManager, GFXRenderPass, GFXFormat, GFXLoadOp, GFXStoreOp, GFXTextureLayout, GFXShaderStageFlagBit, GFXDescriptorType, GFXType, GFXFilter, GFXAddress, RenderFlow, RenderPipeline, director, Vec4, GFXBufferUsageBit, GFXMemoryUsageBit, GFXClearFlag, GFXCullMode, RenderTexture, GFXUniformSampler, GFXDescriptorSetLayoutBinding, GFXUniformBlock, GFXUniform, GFXBufferInfo, GFXRenderPassInfo, GFXColorAttachment, GFXDepthStencilAttachment } from "cc";
+import { _decorator, RenderStage, GFXRect, GFXColor, ForwardPipeline, ModelComponent, renderer, GFXFormat, GFXLoadOp, GFXTextureLayout, GFXFilter, GFXAddress, RenderFlow, RenderPipeline, director, Vec4, GFXBufferUsageBit, GFXMemoryUsageBit, GFXCullMode, RenderTexture, GFXBufferInfo, GFXRenderPassInfo, GFXColorAttachment, GFXDepthStencilAttachment } from "cc";
 
 import { GrassBender } from "./src/grass-bender";
 import { GrassBenderRenderer } from "./src/grass-bender-renderer";
@@ -122,11 +122,11 @@ export class GrassBendRenderStage extends RenderStage {
         buffer.update(this._bendUBO);
     }
 
-    render (view: RenderView) {
+    render (camera: renderer.scene.Camera) {
         if (!this._grassBendRenderer) {
             return;
         }
-        if (view.camera.node !== this._grassBendRenderer.renderCamera!.node) {
+        if (camera.node !== this._grassBendRenderer.renderCamera!.node) {
             return;
         }
         let renderTexture = this._renderTexture;
@@ -140,7 +140,6 @@ export class GrassBendRenderStage extends RenderStage {
 
         const pipeline = this._pipeline as ForwardPipeline;
         const device = pipeline.device;
-        const camera = view.camera;
 
         // command buffer
         const cmdBuff = pipeline.commandBuffers[0];

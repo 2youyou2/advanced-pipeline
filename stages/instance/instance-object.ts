@@ -1,5 +1,5 @@
 
-import { CCObject, Component, geometry, InstancedBuffer, instantiate, log, mat4, Mat4, Material, Mesh, MeshRenderer, Node, Quat, Vec3, _decorator } from 'cc';
+import { Asset, CCObject, Component, geometry, InstancedBuffer, instantiate, log, mat4, Mat4, Material, Mesh, MeshRenderer, Node, Quat, Vec3, _decorator } from 'cc';
 import { EDITOR } from 'cc/env';
 import { getPhaseID } from '../../defines/pipeline';
 import { debug, TechniqueNams } from '../../utils/draw';
@@ -48,7 +48,7 @@ export class InstanceData extends CCObject {
 
 let _instanceID = 0;
 let _instanceTime = Date.now();
-function getAssetID (asset) {
+function getAssetID (asset: any) {
     if (!asset._instanceID_) {
         if (asset._uuid) {
             if (_instanceTime !== Date.now()) {
