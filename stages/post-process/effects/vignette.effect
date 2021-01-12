@@ -10,6 +10,7 @@ CCEffect %{
         blendDst: one_minus_src_alpha
         blendSrcAlpha: src_alpha
         blendDstAlpha: one_minus_src_alpha
+      
 
   techniques:
   - passes:
@@ -17,6 +18,8 @@ CCEffect %{
       frag: fs:frag
       depthStencilState: *d1
       blendState: *b1
+      rasterizerState:
+        cullMode: none
       properties:
         radius: { value: 1 }
         smoothness: { value: 0.3 }
@@ -42,8 +45,8 @@ CCProgram fs %{
   }
 
   vec4 frag () {
-    vec4 final = texture(cc_pe_input_texture, v_uv);
-    final.a = 1.;
+    vec4 final = texture(pe_input_texture, v_uv);
+    // final.a = 1.;
     float v = vignette(v_uv, radius, smoothness);
     vec3 vignetteColor = final.rgb * v;
     vignetteColor += color.rgb * (1.0 - v);

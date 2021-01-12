@@ -128,7 +128,7 @@ CCProgram normal-fs %{
 
   vec4 frag () {
     vec2 fragCoord = v_uv * cc_screenSize.xy;
-    return fxaa(cc_pe_input_texture, fragCoord, cc_screenSize.xy, v_rgbNW, v_rgbNE, v_rgbSW, v_rgbSE, v_rgbM);
+    return fxaa(pe_input_texture, fragCoord, cc_screenSize.xy, v_rgbNW, v_rgbNE, v_rgbSW, v_rgbSE, v_rgbM);
   }
 }%
 
@@ -148,6 +148,6 @@ CCProgram better-fs %{
     mediump vec2 v_rgbM;
     vec2 fragCoord = v_uv * cc_screenSize.xy;
     texcoords(fragCoord, cc_screenSize.xy, v_rgbNW, v_rgbNE, v_rgbSW, v_rgbSE, v_rgbM);
-    return fxaa(cc_pe_input_texture, fragCoord, cc_screenSize.xy, v_rgbNW, v_rgbNE, v_rgbSW, v_rgbSE, v_rgbM);
+    return fxaa(pe_input_texture, fragCoord, cc_screenSize.xy, v_rgbNW, v_rgbNE, v_rgbSW, v_rgbSE, v_rgbM);
   }
 }%

@@ -20,11 +20,15 @@ CCEffect %{
       properties:
         threshold: { value: 0.5 }
         softKnee: { value: 0.5 }
+      rasterizerState:
+        cullMode: none
     - name: downsample
       vert: post-process-vs:vert
       frag: downsample4:frag
       postEffect:
-        output: { size: [0.5, 0.5], name: cc_pe_custom_texture_1 }
+        output: { size: [0.5, 0.5], name: pe_custom_texture_1 }
+      rasterizerState:
+        cullMode: none
     - name: upsample
       vert: post-process-vs:vert
       frag: upsample:frag
@@ -32,6 +36,8 @@ CCEffect %{
       blendState: *b1
       properties:
         sampleScale: { value: 1 }
+      rasterizerState:
+        cullMode: none
   - name: high
     passes:
     - name: prefilter 
@@ -40,11 +46,15 @@ CCEffect %{
       properties:
         threshold: { value: 0.5 }
         softKnee: { value: 0.5 }
+      rasterizerState:
+        cullMode: none
     - name: downsample
       vert: post-process-vs:vert
       frag: downsample13:frag
       postEffect:
-        output: { size: [0.5, 0.5], name: cc_pe_custom_texture_1 }
+        output: { size: [0.5, 0.5], name: pe_custom_texture_1 }
+      rasterizerState:
+        cullMode: none
     - name: upsample
       vert: post-process-vs:vert
       frag: upsample:frag
@@ -52,6 +62,8 @@ CCEffect %{
       blendState: *b1
       properties:
         sampleScale: { value: 1 }
+      rasterizerState:
+        cullMode: none
 }%
 
 CCProgram bloom %{
@@ -167,7 +179,7 @@ CCProgram prefilter4 %{
   };
 
   vec4 frag () {
-    vec4 color = DownsampleBox4Tap(cc_pe_input_texture, v_uv, cc_screenSize.zw);
+    vec4 color = DownsampleBox4Tap(pe_input_texture, v_uv, cc_screenSize.zw);
     return Prefilter(color, v_uv, threshold, softKnee);
   }
 }%
@@ -179,7 +191,7 @@ CCProgram downsample4 %{
   in vec2 v_uv;
 
   vec4 frag () {
-    return DownsampleBox4Tap(cc_pe_input_texture, v_uv, cc_screenSize.zw);
+    return DownsampleBox4Tap(pe_input_texture, v_uv, cc_screenSize.zw);
   }
 }%
 
@@ -195,7 +207,7 @@ CCProgram prefilter13 %{
   };
 
   vec4 frag () {
-    vec4 color = DownsampleBox13Tap(cc_pe_input_texture, v_uv, cc_screenSize.zw);
+    vec4 color = DownsampleBox13Tap(pe_input_texture, v_uv, cc_screenSize.zw);
     return Prefilter(color, v_uv, threshold, softKnee);
   }
 }%
@@ -207,7 +219,7 @@ CCProgram downsample13 %{
   in vec2 v_uv;
 
   vec4 frag () {
-    return DownsampleBox13Tap(cc_pe_input_texture, v_uv, cc_screenSize.zw);
+    return DownsampleBox13Tap(pe_input_texture, v_uv, cc_screenSize.zw);
   }
 }%
 
@@ -222,7 +234,7 @@ CCProgram upsample %{
   };
 
   vec4 frag () {
-    vec4 bloom = UpsampleBox(cc_pe_custom_texture_1, v_uv, cc_screenSize.zw, sampleScale);
-    return Combine(bloom, cc_pe_origin_texture, v_uv);
+    vec4 bloom = UpsampleBox(pe_custom_texture_1, v_uv, cc_screenSize.zw, sampleScale);
+    return Combine(bloom, pe_origin_texture, v_uv);
   }
 }%

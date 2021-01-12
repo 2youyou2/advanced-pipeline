@@ -17,6 +17,7 @@ export class PostProcess extends Component {
     }
     set renderers (value) {
         this._renderers = value;
+        this._updateRenderers();
         this._updateStage();
     }
 
@@ -26,22 +27,35 @@ export class PostProcess extends Component {
     get materials () {
         return this._renderers.map(r => r.material);
     }
-    set materials (value) {
-        this._renderers.forEach((r, index) => {
-            r._updateMaterial(value[index]);
+    // set materials (value) {
+    //     this._renderers.forEach((r, index) => {
+    //         r._updateMaterial(value[index]);
+    //     })
+    //     this._updateStage();
+    // }
+
+    start () {
+        this._updateRenderers();
+
+        this._stage = undefined;
+        director.root!.pipeline.flows.forEach(flow => {
+            this._stage = flow.stages.find(s => s.name === "PostProcessStage") as PostProcessStage | undefined;
+            if (this._stage) {
+                return;
+            }
         })
+
         this._updateStage();
     }
 
-    start () {
-        let flow = director.root!.pipeline.flows.find(f => f.name === 'PostProcessFlow');
-        if (flow) {
-            this._stage = flow.stages.find(s => s instanceof PostProcessStage) as PostProcessStage | undefined;
-            this._updateStage();
-        }
+    private _updateRenderers () {
+        this.node.removeAllChildren();
+        this._renderers.forEach(r => {
+            r._postProcess = this;
+        })
     }
 
-    _updateStage () {
+    private _updateStage () {
         if (this._stage) {
             this._stage.renderers = this._renderers;
             this._stage.update(this.renderers);

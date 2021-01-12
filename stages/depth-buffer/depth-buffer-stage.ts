@@ -119,7 +119,7 @@ export class DepthBufferStage extends RenderStage {
     }
 
     render (camera: renderer.scene.Camera) {
-        if (!this.enabled) {
+        if (!this.enabled || this.depthBufferObjects.length === 0) {
             return;
         }
 

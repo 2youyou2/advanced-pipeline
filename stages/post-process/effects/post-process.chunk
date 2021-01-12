@@ -1,11 +1,7 @@
 
-#pragma builtin(global)
-layout(set = 1, binding = 8) uniform sampler2D cc_pe_origin_texture;
-#pragma builtin(global)
-layout(set = 1, binding = 9) uniform sampler2D cc_pe_input_texture;
-#pragma builtin(global)
-layout(set = 1, binding = 10) uniform sampler2D cc_pe_custom_texture_1;
-#pragma builtin(global)
-layout(set = 1, binding = 11) uniform sampler2D cc_pe_custom_texture_2;
+uniform sampler2D pe_origin_texture;
+uniform sampler2D pe_input_texture;
+uniform sampler2D pe_custom_texture_1;
+uniform sampler2D pe_custom_texture_2;
 
 #include <cc-global>

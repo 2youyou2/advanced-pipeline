@@ -1,6 +1,15 @@
 // Copyright (c) 2017-2018 Xiamen Yaji Software Co., Ltd.  
 
 CCEffect %{
+  temporaries:
+    d1: &d1 { depthTest: true, depthWrite: false }
+    b1: &b1
+      targets:
+      - blend: true
+        blendSrc: src_alpha
+        blendDst: one_minus_src_alpha
+        blendSrcAlpha: src_alpha
+        blendDstAlpha: one_minus_src_alpha
   techniques:
   - passes:
     - vert: post-process-vs:vert
@@ -9,6 +18,10 @@ CCEffect %{
         brightness: { value: 1.0 }
         saturation: { value: 1.0 }
         contrast: { value: 1.0 }
+      depthStencilState: *d1
+      blendState: *b1
+      rasterizerState:
+        cullMode: none
 }%
 
 
@@ -29,7 +42,7 @@ CCProgram fs %{
   }
 
   vec4 frag () {
-    vec4 color = texture(cc_pe_input_texture, v_uv);
+    vec4 color = texture(pe_input_texture, v_uv);
     
     // brightness
     color.rgb *= brightness;

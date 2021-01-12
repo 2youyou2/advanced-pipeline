@@ -42,6 +42,13 @@ export class InstanceForwardStage extends ForwardStage {
 
         this.updateQueue(cmdBuff, camera);
 
+        this._instanceObjectQueue.uploadBuffers(cmdBuff);
+        if (!this._instanceObjectQueue.queue.size) {
+            return;
+        }
+
+        (this as any)._additiveLightQueue.gatherLightPasses(camera, cmdBuff);
+
         const vp = camera.viewport;
         const window = camera.window! as any as __private.cocos_core_renderer_core_render_window_RenderWindow;
         // render area is not oriented
@@ -53,9 +60,6 @@ export class InstanceForwardStage extends ForwardStage {
         renderArea.y = vp.y * h;
         renderArea.width = vp.width * w * pipeline.shadingScale;
         renderArea.height = vp.height * h * pipeline.shadingScale;
-
-        this._instanceObjectQueue.uploadBuffers(cmdBuff);
-        (this as any)._additiveLightQueue.gatherLightPasses(camera, cmdBuff);
 
         const framebuffer = window.framebuffer;
         const renderPass = framebuffer.colorTextures[0] ? framebuffer.renderPass : pipeline.getRenderPass(camera.clearFlag);
