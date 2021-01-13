@@ -2,41 +2,37 @@ import { _decorator, Component, director, Material } from 'cc';
 const { ccclass, property, type, executeInEditMode } = _decorator;
 
 import { PostProcessStage } from './post-process-stage';
-import PostProcessRenderer from './post-process-renderer';
+
+import { TonemapEffect } from './effects/tonemap';
+import { VignetteEffect } from './effects/vignette';
+import { PostEffectBase } from './post-effect-base';
+import { BloomEffect } from './effects/bloom';
+
+let effectsOrder: string[] = [];
+function registerEffectOrder (cls: PostProcess, name: string) {
+    effectsOrder.push(name);
+}
 
 @ccclass('PostProcess')
 @executeInEditMode
 export class PostProcess extends Component {
     _stage: PostProcessStage | undefined;
 
-    @type(PostProcessRenderer)
-    _renderers: PostProcessRenderer[] = [];
-    @type(PostProcessRenderer)
-    get renderers () {
-        return this._renderers;
-    }
-    set renderers (value) {
-        this._renderers = value;
-        this._updateRenderers();
-        this._updateStage();
-    }
+    _effects: PostEffectBase[] = [];
 
-    // just for refresh material in editor
-    // do not modify manually
-    @type(Material)
-    get materials () {
-        return this._renderers.map(r => r.material);
-    }
-    // set materials (value) {
-    //     this._renderers.forEach((r, index) => {
-    //         r._updateMaterial(value[index]);
-    //     })
-    //     this._updateStage();
-    // }
+    @type(BloomEffect)
+    @registerEffectOrder
+    bloom = new BloomEffect
 
-    start () {
-        this._updateRenderers();
+    @type(TonemapEffect)
+    @registerEffectOrder
+    tonemap = new TonemapEffect
 
+    @type(VignetteEffect)
+    @registerEffectOrder
+    vignette = new VignetteEffect
+
+    onEnable () {
         this._stage = undefined;
         director.root!.pipeline.flows.forEach(flow => {
             this._stage = flow.stages.find(s => s.name === "PostProcessStage") as PostProcessStage | undefined;
@@ -45,24 +41,34 @@ export class PostProcess extends Component {
             }
         })
 
+        this.rebuild();
+    }
+
+    onDisable () {
+        this._updateStage();
+    }
+
+    rebuild () {
+        this._updateRenderers();
         this._updateStage();
     }
 
     private _updateRenderers () {
         this.node.removeAllChildren();
-        this._renderers.forEach(r => {
-            r._postProcess = this;
+
+        this._effects.length = 0;
+        effectsOrder.forEach(name => {
+            let effect = (this as any)[name] as PostEffectBase;
+            if (effect && effect.enabled) {
+                effect._postProcess = this;
+                this._effects.push(effect);
+            }
         })
     }
 
     private _updateStage () {
         if (this._stage) {
-            this._stage.renderers = this._renderers;
-            this._stage.update(this.renderers);
+            this._stage.effects = this.enabledInHierarchy ? this._effects : [];
         }
     }
-
-    // update (deltaTime: number) {
-    //     // Your update function goes here.
-    // }
 }

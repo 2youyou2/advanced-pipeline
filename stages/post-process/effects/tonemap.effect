@@ -10,51 +10,33 @@ CCEffect %{
         blendDst: one_minus_src_alpha
         blendSrcAlpha: src_alpha
         blendDstAlpha: one_minus_src_alpha
+      
+
   techniques:
   - passes:
     - vert: post-process-vs:vert
       frag: fs:frag
-      properties:
-        brightness: { value: 1.0 }
-        saturation: { value: 1.0 }
-        contrast: { value: 1.0 }
       depthStencilState: *d1
       blendState: *b1
       rasterizerState:
         cullMode: none
 }%
 
-
 CCProgram fs %{
   precision highp float;
   #include <post-process>
+  #include <gamma>
+  #include <aces>
   in vec2 v_uv;
-
-  uniform Vignette {
-    float brightness;
-    float saturation;
-    float contrast;
-  };
-
-  float vignette(vec2 uv, float a, float b) {
-    float len = length(uv - 0.5);
-    return smoothstep(a, b, len);
-  }
 
   vec4 frag () {
     vec4 color = texture(pe_input_texture, v_uv);
-    
-    // brightness
-    color.rgb *= brightness;
 
-    // saturation
-    vec3 luminance = vec3(dot(color.rgb, vec3(0.2126729, 0.7151522, 0.0721750)));
-    color.rgb = mix(luminance, color.rgb, saturation);
+    #if CC_USE_HDR
+    color.rgb = ACESToneMap(color.rgb);
+    color.rgb = LinearToSRGB(color.rgb);
+    #endif
 
-    // contrast
-    vec3 grayColor = vec3(0.5, 0.5, 0.5);
-    color.rgb = mix(grayColor, color.rgb, contrast);
-    
     return color;
   }
 }%

@@ -1,13 +1,20 @@
-import PostProcessCommand from "./post-process-command";
-import { _decorator, Material, ccenum, Enum, warn, utils, Node, MeshRenderer, CCObject } from "cc";
+import { CCObject, Color, Material, MeshRenderer, Node, utils, warn, _decorator } from 'cc';
+import { cce, EDITOR } from '../../utils/editor';
 import postProcessMaterials from './editor/post-process-renderer-materials';
-import { EDITOR } from '../../utils/editor';
 import { PostProcess } from './post-process';
+import PostProcessCommand from './post-process-command';
+const { property, ccclass, type } = _decorator
 
-const { property, type, ccclass } = _decorator;
+export const postEffects: Map<string, typeof PostEffectBase> = new Map();
+export function register (cls: typeof PostEffectBase) {
+    postEffects.set(cls.effectName, cls);
+}
 
+export function get (effectName: string) {
+    return postEffects.get(effectName);
+}
 
-class PassDefine {
+export class PassDefine {
 
     outputName = '';
     inputNames: string[] = []
@@ -22,26 +29,12 @@ class PassDefine {
     }
 }
 
-let materialEnum: any = {}
-let materialEnumIndex = 0;
-for (const iter of postProcessMaterials) {
-    materialEnum[iter[0]] = materialEnumIndex++;
-}
-Enum(materialEnum);
 
+@ccclass('PostEffectBase')
+export class PostEffectBase {
+    static effectName = '';
+    static passDefines: Map<number, PassDefine> | undefined = new Map;
 
-// 
-let bloomDefines = new Map()
-bloomDefines.set(1, new PassDefine('cc_pe_custom_texture_1'))
-bloomDefines.set(2, new PassDefine('', ['cc_pe_custom_texture_1']))
-
-let rendererPassDefines: Map<string, Map<number, PassDefine>> = new Map;
-rendererPassDefines.set('bloom', bloomDefines);
-
-@ccclass('PostProcessRenderer')
-export default class PostProcessRenderer {
-    _passDefines: Map<number, PassDefine> | undefined = new Map;
-    _commandMap: Map<string, PostProcessCommand> = new Map;
     _commands: PostProcessCommand[] = [];
     get commands () {
         this.init();
@@ -58,6 +51,9 @@ export default class PostProcessRenderer {
     }
     set enabled (v) {
         this._enabled = v;
+        if (this._postProcess) {
+            this._postProcess.rebuild();
+        }
     }
 
     @type(Material)
@@ -67,22 +63,6 @@ export default class PostProcessRenderer {
         return this._material;
     }
 
-    // @ts-ignore
-    @type(materialEnum)
-    _type = 0;
-    // @ts-ignore
-    @type(materialEnum)
-    get type () {
-        return this._type;
-    }
-    set type (value) {
-        this._type = value;
-        this._updateType();
-    }
-
-    @property
-    _typeName = '';
-
     _inited = false;
     init () {
         if (this._inited) return;
@@ -90,23 +70,24 @@ export default class PostProcessRenderer {
         this._updateType();
     }
 
-    _updateType () {
+    _updateProperty (name: string, val: any) {
+        if (!this._material) return;
+        this._material.setProperty(name, val);
         if (EDITOR) {
-            let materialName = materialEnum[this._type];
-            this._material = postProcessMaterials.get(materialName);
-            this._typeName = materialName;
+            cce.Engine.repaintInEditMode();
         }
-        this._passDefines = rendererPassDefines.get(this._typeName);
-        this._updateCommands();
     }
 
-    _updateMaterial (m: Material | undefined) {
-        this._material = m;
+    _updateType () {
+        if (EDITOR) {
+            let materialName = (this.constructor as typeof PostEffectBase).effectName;
+            this._material = postProcessMaterials.get(materialName);
+        }
         this._updateCommands();
     }
 
     _updateCommands () {
-        let commandMap = this._commandMap;
+        let commandMap: Map<string, PostProcessCommand> = new Map;
         let commands = this._commands;
         commands.length = 0;
         commandMap.clear();
@@ -123,8 +104,8 @@ export default class PostProcessRenderer {
                 -1, 1, 0, 1, 1, 0,
             ],
             uvs: [
-                0, 0, 1, 0,
-                0, 1, 1, 1
+                0, 1, 1, 1,
+                0, 0, 1, 0
             ],
             indices: [
                 0, 1, 2, 1, 3, 2
@@ -141,6 +122,8 @@ export default class PostProcessRenderer {
 
         let subModels = mr.model?.subModels!;
 
+        let passDefines = (this.constructor as typeof PostEffectBase).passDefines;
+
         for (let i = 0; i < subModels.length; i++) {
             let submodel = subModels[i];
 
@@ -149,7 +132,7 @@ export default class PostProcessRenderer {
                 let pass = passes[pi];
                 let cmd = new PostProcessCommand(submodel, pass);
 
-                let define = this._passDefines && this._passDefines.get(i);
+                let define = passDefines && passDefines.get(pi);
                 if (define) {
                     if (define.outputName) {
                         cmd.outputName = define.outputName;

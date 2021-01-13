@@ -1,4 +1,4 @@
-import { _decorator, RenderFlow, renderer, ForwardStage, __private, ForwardPipeline, ForwardFlow, ShadowStage, GFXRect, RenderStage, Rect, GFXClearFlag, RenderPipeline } from "cc";
+import { _decorator, RenderFlow, renderer, ForwardStage, __private, ForwardPipeline, ForwardFlow, ShadowStage, GFXRect, RenderStage, Rect, GFXClearFlag, RenderPipeline, geometry, Pool, pipeline, Vec3 } from "cc";
 import { EDITOR } from 'cc/env';
 import { DepthBufferStage } from './depth-buffer/depth-buffer-stage';
 import { GrassBendRenderStage } from './grass/grass-bend-render-stage';
@@ -6,6 +6,45 @@ import { InstanceForwardStage } from './instance/instance-forward-stage';
 import { InstanceShadowStage } from './instance/instance-shadow-stage';
 import { PostProcessStage } from './post-process/post-process-stage';
 const { ccclass, property } = _decorator;
+
+let _tempVec3 = new Vec3
+const roPool = new Pool<pipeline.IRenderObject>(() => ({ model: null!, depth: 0 }), 128);
+function getRenderObject (model: renderer.scene.Model, camera: renderer.scene.Camera) {
+    let depth = 0;
+    if (model.node) {
+        Vec3.subtract(_tempVec3, model.node.worldPosition, camera.position);
+        depth = Vec3.dot(_tempVec3, camera.forward);
+    }
+    const ro = roPool.alloc();
+    ro.model = model;
+    ro.depth = depth;
+    return ro;
+}
+
+function sceneCulling (pipeline: ForwardPipeline, camera: renderer.scene.Camera) {
+    const scene = camera.scene!;
+    const models = scene.models;
+
+    const renderObjects = pipeline.renderObjects;
+    roPool.freeArray(renderObjects); renderObjects.length = 0;
+
+    for (let i = 0; i < models.length; i++) {
+        const model = models[i];
+
+        // filter model by view visibility
+        if (model.enabled) {
+            if (model.node && ((camera.visibility & model.node.layer) === model.node.layer)
+                || (camera.visibility & model.visFlags)) {
+                // frustum culling
+                if (model.worldBounds && !geometry.intersect.aabbFrustum(model.worldBounds, camera.frustum)) {
+                    continue;
+                }
+
+                renderObjects.push(getRenderObject(model, camera));
+            }
+        }
+    }
+}
 
 @ccclass("AdvancedFlow")
 export class AdvancedFlow extends ForwardFlow {
@@ -72,11 +111,20 @@ export class AdvancedFlow extends ForwardFlow {
         // camera.update();
 
         const pipeline = this._pipeline as ForwardPipeline;
-        super.sceneCulling(camera);
         pipeline.updateCameraUBO(camera);
 
+        // TODO: hack sceneCulling 
+        // @ts-ignore
+        if (super.sceneCulling) {
+            // @ts-ignore
+            super.sceneCulling(camera);
+        }
+        else {
+            sceneCulling(pipeline, camera);
+        }
+
         let postProcessStage = this._postProcessStage;
-        if (!EDITOR || camera.node.name === 'Editor Camera') {
+        if (!EDITOR || camera.name === 'Editor Camera') {
             this._depthStage?.render(camera);
             this._grassBendStage?.render(camera);
 
@@ -88,7 +136,7 @@ export class AdvancedFlow extends ForwardFlow {
 
         this._instanceForwardStage?.render(camera);
 
-        if (!EDITOR || camera.node.name === 'Editor Camera') {
+        if (!EDITOR || camera.name === 'Editor Camera') {
             if (postProcessStage && postProcessStage._renderCommands.length !== 0) {
                 postProcessStage.render(camera);
             }

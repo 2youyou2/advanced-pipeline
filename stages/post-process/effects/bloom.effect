@@ -2,7 +2,7 @@
 
 CCEffect %{
   temporaries:
-    d1: &d1 { depthTest: true, depthWrite: false }
+    d1: &d1 { depthTest: false, depthWrite: false }
     b1: &b1
       targets:
       - blend: true

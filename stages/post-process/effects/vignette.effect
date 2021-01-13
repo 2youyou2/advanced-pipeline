@@ -2,7 +2,7 @@
 
 CCEffect %{
   temporaries:
-    d1: &d1 { depthTest: true, depthWrite: false }
+    d1: &d1 { depthTest: false, depthWrite: false }
     b1: &b1
       targets:
       - blend: true
@@ -46,11 +46,13 @@ CCProgram fs %{
 
   vec4 frag () {
     vec4 final = texture(pe_input_texture, v_uv);
-    // final.a = 1.;
+
     float v = vignette(v_uv, radius, smoothness);
     vec3 vignetteColor = final.rgb * v;
     vignetteColor += color.rgb * (1.0 - v);
     final.rgb = mix(final.rgb, vignetteColor, intensity);
+    final.a += v;
+
     return final;
   }
 }%

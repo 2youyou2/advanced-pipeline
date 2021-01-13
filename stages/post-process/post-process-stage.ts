@@ -1,5 +1,5 @@
-import { _decorator, renderer, GFXPipelineState, GFXCommandBuffer, GFXFramebuffer, pipeline, GFXColor, ForwardStage, ForwardPipeline, RenderTexture, GFXRect, __private, warn, GFXColorAttachment, GFXTextureLayout, GFXDepthStencilAttachment, GFXRenderPassInfo, gfx, GFXFilter, GFXAddress, PipelineStateManager, Camera, GFXClearFlag, Rect, Color, Vec4 } from "cc";
-import PostProcessRenderer from "./post-process-renderer";
+import { _decorator, renderer, GFXPipelineState, GFXCommandBuffer, GFXFramebuffer, pipeline, GFXColor, ForwardStage, ForwardPipeline, RenderTexture, GFXRect, __private, warn, GFXColorAttachment, GFXTextureLayout, GFXDepthStencilAttachment, GFXRenderPassInfo, gfx, GFXFilter, GFXAddress, PipelineStateManager, Camera, GFXClearFlag, Rect, Color, Vec4, director } from "cc";
+import { PostEffectBase } from './post-effect-base';
 
 const { SetIndex } = pipeline;
 const { ccclass, property } = _decorator;
@@ -45,11 +45,15 @@ export class PostProcessCameraSetting {
     }
 
     setToCamera (camera: renderer.scene.Camera) {
-        camera.window = this.window as any;
+        camera.changeTargetWindow(this.window as any);
+
         camera.clearDepth = this.clearDepth;
         camera.clearStencil = this.clearStencil;
         camera.clearFlag = this.clearFlag;
         camera.viewport.set(this.viewport);
+
+        camera.update(true);
+        (director.root?.pipeline as ForwardPipeline).updateCameraUBO(camera);
 
         Vec4.copy(camera.clearColor, this.clearColor);
     }
@@ -130,24 +134,19 @@ export class PostProcessStage extends ForwardStage {
         }
     }
 
-    _renderers: PostProcessRenderer[] = [];
-    get renderers () {
-        return this._renderers;
+    _effects: PostEffectBase[] = [];
+    get effects () {
+        return this._effects;
     }
-    set renderers (value) {
-        this._renderers = value;
+    set effects (value) {
+        this._effects = value;
         this.rebuild();
     }
 
     _renderCommands: PostEffectRenderCommand[] = [];
 
-    update (renderers: PostProcessRenderer[]) {
-        this._renderers = renderers;
-        this.rebuild();
-    }
-
     clear () {
-        this._renderers.length = 0;
+        this._effects.length = 0;
         this._renderCommands.length = 0;
     }
 
@@ -173,9 +172,9 @@ export class PostProcessStage extends ForwardStage {
         }
 
         let hasCommand = false;
-        let renderers = this._renderers;
-        for (let ri = 0; ri < renderers.length; ri++) {
-            let renderer = renderers[ri];
+        let effects = this._effects;
+        for (let ri = 0; ri < effects.length; ri++) {
+            let renderer = effects[ri];
             if (!renderer || !renderer.enabled) {
                 continue;
             }
@@ -200,8 +199,8 @@ export class PostProcessStage extends ForwardStage {
         let flip: RenderTexture | null = null, flop: RenderTexture | null = null, tmp: RenderTexture | null = null;
         let renderTextureMap: Map<string, RenderTexture> = new Map();
 
-        for (let ri = 0; ri < renderers.length; ri++) {
-            let r = renderers[ri];
+        for (let ri = 0; ri < effects.length; ri++) {
+            let r = effects[ri];
             if (!r || !r.enabled) {
                 continue;
             }
