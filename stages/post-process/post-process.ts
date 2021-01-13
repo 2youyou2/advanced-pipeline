@@ -59,8 +59,9 @@ export class PostProcess extends Component {
         this._effects.length = 0;
         effectsOrder.forEach(name => {
             let effect = (this as any)[name] as PostEffectBase;
+            effect._postProcess = this;
+
             if (effect && effect.enabled) {
-                effect._postProcess = this;
                 this._effects.push(effect);
             }
         })
