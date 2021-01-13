@@ -1,4 +1,4 @@
-import { _decorator, renderer, GFXPipelineState, GFXCommandBuffer, GFXFramebuffer, pipeline, GFXColor, ForwardStage, ForwardPipeline, RenderTexture, GFXRect, __private, warn, GFXColorAttachment, GFXTextureLayout, GFXDepthStencilAttachment, GFXRenderPassInfo, gfx, GFXFilter, GFXAddress, PipelineStateManager, Camera, GFXClearFlag, Rect, Color, Vec4, director } from "cc";
+import { _decorator, renderer, GFXPipelineState, GFXCommandBuffer, GFXFramebuffer, pipeline, GFXColor, ForwardStage, ForwardPipeline, RenderTexture, GFXRect, __private, warn, GFXColorAttachment, GFXTextureLayout, GFXDepthStencilAttachment, GFXRenderPassInfo, gfx, GFXFilter, GFXAddress, PipelineStateManager, Camera, GFXClearFlag, Rect, Color, Vec4, director, Director, view } from "cc";
 import { PostEffectBase } from './post-effect-base';
 
 const { SetIndex } = pipeline;
@@ -67,6 +67,14 @@ export class PostProcessStage extends ForwardStage {
 
     postProcessCameraSetting = new PostProcessCameraSetting
     oldCameraSetting = new PostProcessCameraSetting
+
+    initialize (info: any) {
+        view.on('design-resolution-changed', () => {
+            let divice = director.root?.device!;
+            this.resize(divice.width, divice.height);
+        }, this);
+        return super.initialize(info);
+    }
 
     render (camera: renderer.scene.Camera) {
         const pipeline = this._pipeline as ForwardPipeline;
@@ -150,21 +158,25 @@ export class PostProcessStage extends ForwardStage {
         this._renderCommands.length = 0;
     }
 
-    _originRenderTexture: RenderTexture | undefined;
-    rebuild () {
-        let frameBuffersToDestroy: (RenderTexture | undefined)[] = [];
+    get usedTextures () {
+        let usedTextures: (RenderTexture | undefined)[] = [];
         let renderCommands = this._renderCommands;
         for (let i = 0; i < renderCommands.length; i++) {
-            if (renderCommands[i].input && !frameBuffersToDestroy.includes(renderCommands[i].input)) {
+            if (renderCommands[i].input && !usedTextures.includes(renderCommands[i].input)) {
                 if (renderCommands[i].input !== this._originRenderTexture) {
-                    frameBuffersToDestroy.push(renderCommands[i].input)
+                    usedTextures.push(renderCommands[i].input)
                 }
             }
-            if (renderCommands[i].output && !frameBuffersToDestroy.includes(renderCommands[i].output)) {
-                frameBuffersToDestroy.push(renderCommands[i].output)
+            if (renderCommands[i].output && !usedTextures.includes(renderCommands[i].output)) {
+                usedTextures.push(renderCommands[i].output)
             }
         }
-        renderCommands.length = 0;
+        return usedTextures;
+    }
+
+    _originRenderTexture: RenderTexture | undefined;
+    rebuild () {
+        let frameBuffersToDestroy = this.usedTextures;
         for (let i = 0; i < frameBuffersToDestroy.length; i++) {
             if (frameBuffersToDestroy[i]) {
                 frameBuffersToDestroy[i]!.destroy();
@@ -199,6 +211,9 @@ export class PostProcessStage extends ForwardStage {
         let flip: RenderTexture | null = null, flop: RenderTexture | null = null, tmp: RenderTexture | null = null;
         let renderTextureMap: Map<string, RenderTexture> = new Map();
 
+
+        let renderCommands = this._renderCommands;
+        renderCommands.length = 0;
         for (let ri = 0; ri < effects.length; ri++) {
             let r = effects[ri];
             if (!r || !r.enabled) {
@@ -273,6 +288,13 @@ export class PostProcessStage extends ForwardStage {
     }
 
     resize (width: number, height: number) {
+        // if (this._originRenderTexture) {
+        //     this._originRenderTexture.resize(width, height);
+        // }
+        // this.usedTextures.forEach(t => {
+        //     t?.resize(width, height);
+        // })
+
         if (this._originRenderTexture) {
             this._originRenderTexture.destroy();
             this._originRenderTexture = undefined;
@@ -281,12 +303,12 @@ export class PostProcessStage extends ForwardStage {
     }
 }
 
-// director.on(Director.EVENT_BEFORE_SCENE_LAUNCH, () => {
-//     let flow = director.root.pipeline.getFlow('PostProcessFlow');
-//     if (flow) {
-//         let stage = flow.stages.find(s => s instanceof PostProcessStage) as PostProcessStage;
-//         if (stage) {
-//             stage.clear();
-//         }
-//     }
-// })
+director.on(Director.EVENT_BEFORE_SCENE_LAUNCH, () => {
+    director.root!.pipeline.flows.forEach(flow => {
+        let stage = flow.stages.find(s => s.name === "PostProcessStage") as PostProcessStage | undefined;
+        if (stage) {
+            stage.clear();
+            return;
+        }
+    })
+})
