@@ -14,7 +14,8 @@
       }
     ],
     "renderTextures": [],
-    "materials": []
+    "materials": [],
+    "usePostProcess": true
   },
   {
     "__type__": "ShadowFlow",

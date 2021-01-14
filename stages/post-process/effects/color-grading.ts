@@ -3,23 +3,19 @@ import { PostEffectBase, effect, effectProperty } from '../post-effect-base';
 const { property, ccclass } = _decorator
 
 @effect
-@ccclass('VignetteEffect')
-export class VignetteEffect extends PostEffectBase {
-    static effectName = 'vignette';
+@ccclass('ColorGradingEffect')
+export class ColorGradingEffect extends PostEffectBase {
+    static effectName = 'color-grading';
 
     @property
     @effectProperty
-    _radius = 1;
+    _brightness = 1.0;
 
     @property
     @effectProperty
-    _smoothness = 0.3;
+    _saturation = 1.0;
 
     @property
     @effectProperty
-    _intensity = 1.0;
-
-    @property
-    @effectProperty
-    _color = Color.BLACK.clone();
+    _contrast = 1.0;
 }

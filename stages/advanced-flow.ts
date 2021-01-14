@@ -1,5 +1,6 @@
 import { _decorator, RenderFlow, renderer, ForwardStage, __private, ForwardPipeline, ForwardFlow, ShadowStage, GFXRect, RenderStage, Rect, GFXClearFlag, RenderPipeline, geometry, Pool, pipeline, Vec3 } from "cc";
 import { EDITOR } from 'cc/env';
+import { AdvancedPipeline } from './advanced-pipeline';
 import { DepthBufferStage } from './depth-buffer/depth-buffer-stage';
 import { GrassBendRenderStage } from './grass/grass-bend-render-stage';
 import { InstanceForwardStage } from './instance/instance-forward-stage';
@@ -110,7 +111,7 @@ export class AdvancedFlow extends ForwardFlow {
 
         // camera.update();
 
-        const pipeline = this._pipeline as ForwardPipeline;
+        const pipeline = this._pipeline as AdvancedPipeline;
         pipeline.updateCameraUBO(camera);
 
         // TODO: hack sceneCulling 
@@ -123,12 +124,13 @@ export class AdvancedFlow extends ForwardFlow {
             sceneCulling(pipeline, camera);
         }
 
-        let postProcessStage = this._postProcessStage;
+        let postProcessStage = this._postProcessStage!;
+        let usePostProcess = pipeline.usePostProcess && postProcessStage && postProcessStage._renderCommands.length !== 0;
         if (!EDITOR || camera.name === 'Editor Camera') {
             this._depthStage?.render(camera);
             this._grassBendStage?.render(camera);
 
-            if (postProcessStage && postProcessStage._renderCommands.length !== 0) {
+            if (usePostProcess) {
                 postProcessStage.oldCameraSetting.set(camera);
                 postProcessStage.postProcessCameraSetting.setToCamera(camera);
             }
@@ -137,7 +139,7 @@ export class AdvancedFlow extends ForwardFlow {
         this._instanceForwardStage?.render(camera);
 
         if (!EDITOR || camera.name === 'Editor Camera') {
-            if (postProcessStage && postProcessStage._renderCommands.length !== 0) {
+            if (usePostProcess) {
                 postProcessStage.render(camera);
             }
         }

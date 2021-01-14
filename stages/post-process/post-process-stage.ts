@@ -183,6 +183,9 @@ export class PostProcessStage extends ForwardStage {
             }
         }
 
+        let renderCommands = this._renderCommands;
+        renderCommands.length = 0;
+
         let hasCommand = false;
         let effects = this._effects;
         for (let ri = 0; ri < effects.length; ri++) {
@@ -211,9 +214,6 @@ export class PostProcessStage extends ForwardStage {
         let flip: RenderTexture | null = null, flop: RenderTexture | null = null, tmp: RenderTexture | null = null;
         let renderTextureMap: Map<string, RenderTexture> = new Map();
 
-
-        let renderCommands = this._renderCommands;
-        renderCommands.length = 0;
         for (let ri = 0; ri < effects.length; ri++) {
             let r = effects[ri];
             if (!r || !r.enabled) {
