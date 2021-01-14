@@ -3,14 +3,39 @@ import { cce, EDITOR } from '../../utils/editor';
 import postProcessMaterials from './editor/post-process-renderer-materials';
 import { PostProcess } from './post-process';
 import PostProcessCommand from './post-process-command';
+import { getMesh } from './quad-mesh';
 const { property, ccclass, type } = _decorator
 
 export const postEffects: Map<string, typeof PostEffectBase> = new Map();
-export function register (cls: typeof PostEffectBase) {
+export function effect (cls: typeof PostEffectBase) {
     postEffects.set(cls.effectName, cls);
 }
 
-export function get (effectName: string) {
+export function effectProperty (cls: PostEffectBase, privateName: string) {
+    let publicName = privateName;
+    if (publicName[0] === '_') {
+        publicName = publicName.substring(1);
+    }
+
+    if (!cls._effectProperties) {
+        cls._effectProperties = [];
+    }
+    cls._effectProperties.push(publicName);
+    let descriptor: any = {
+        get () {
+            return this[privateName];
+        },
+        set (v: any) {
+            this[privateName] = v;
+            this._updateProperty(publicName, v);
+        }
+
+    }
+    Object.defineProperty(cls, publicName, descriptor)
+    property(cls, publicName, descriptor);
+}
+
+export function getEffect (effectName: string) {
     return postEffects.get(effectName);
 }
 
@@ -35,13 +60,18 @@ export class PostEffectBase {
     static effectName = '';
     static passDefines: Map<number, PassDefine> | undefined = new Map;
 
+    _effectProperties!: string[];
+
+    isReverse = false;
+    postProcess: PostProcess | undefined;
+
     _commands: PostProcessCommand[] = [];
     get commands () {
         this.init();
         return this._commands;
     }
 
-    _postProcess: PostProcess | undefined;
+    _materialInstance: Material | undefined;
 
     @property
     _enabled = true;
@@ -51,8 +81,8 @@ export class PostEffectBase {
     }
     set enabled (v) {
         this._enabled = v;
-        if (this._postProcess) {
-            this._postProcess.rebuild();
+        if (this.postProcess) {
+            this.postProcess.rebuild();
         }
     }
 
@@ -71,10 +101,18 @@ export class PostEffectBase {
     }
 
     _updateProperty (name: string, val: any) {
-        if (!this._material) return;
-        this._material.setProperty(name, val);
+        if (!this._materialInstance) return;
+        this._materialInstance.setProperty(name, val);
+        this._updatePasses();
         if (EDITOR) {
             cce.Engine.repaintInEditMode();
+        }
+    }
+    _updatePasses () {
+        if (!this._materialInstance) return;
+        let passes = this._materialInstance.passes;
+        for (let i = 0; i < passes.length; i++) {
+            passes[i].update();
         }
     }
 
@@ -95,22 +133,15 @@ export class PostEffectBase {
         let material = this._material;
         if (!material) return;
 
-        let postProcess = this._postProcess;
+        let postProcess = this.postProcess;
         if (!postProcess) return;
 
-        let mesh = utils.createMesh({
-            positions: [
-                -1, -1, 0, 1, -1, 0,
-                -1, 1, 0, 1, 1, 0,
-            ],
-            uvs: [
-                0, 1, 1, 1,
-                0, 0, 1, 0
-            ],
-            indices: [
-                0, 1, 2, 1, 3, 2
-            ]
-        });
+        let isReverse = this.isReverse;
+        if (!(this._material!.passes.length % 2)) {
+            isReverse = !isReverse;
+        }
+
+        let mesh = getMesh(isReverse);
 
         let node = new Node();
         node._objFlags = CCObject.Flags.DontSave;
@@ -120,8 +151,9 @@ export class PostEffectBase {
         mr.material = this._material!;
         node.parent = postProcess.node;
 
-        let subModels = mr.model?.subModels!;
+        this._materialInstance = mr.getMaterialInstance(0)!;
 
+        let subModels = mr.model?.subModels!;
         let passDefines = (this.constructor as typeof PostEffectBase).passDefines;
 
         for (let i = 0; i < subModels.length; i++) {

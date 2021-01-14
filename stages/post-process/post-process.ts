@@ -7,10 +7,13 @@ import { TonemapEffect } from './effects/tonemap';
 import { VignetteEffect } from './effects/vignette';
 import { PostEffectBase } from './post-effect-base';
 import { BloomEffect } from './effects/bloom';
+import { ColorGradingEffect } from './effects/color-grading';
 
-let effectsOrder: string[] = [];
-function registerEffectOrder (cls: PostProcess, name: string) {
-    effectsOrder.push(name);
+function effectOrder (pp: PostProcess, name: string) {
+    if (!pp._effectsOrder) {
+        pp._effectsOrder = [];
+    }
+    pp._effectsOrder.push(name);
 }
 
 @ccclass('PostProcess')
@@ -19,17 +22,22 @@ export class PostProcess extends Component {
     _stage: PostProcessStage | undefined;
 
     _effects: PostEffectBase[] = [];
+    _effectsOrder!: string[];
 
     @type(BloomEffect)
-    @registerEffectOrder
+    @effectOrder
     bloom = new BloomEffect
 
+    @type(ColorGradingEffect)
+    @effectOrder
+    colorGrading = new ColorGradingEffect
+
     @type(TonemapEffect)
-    @registerEffectOrder
+    @effectOrder
     tonemap = new TonemapEffect
 
     @type(VignetteEffect)
-    @registerEffectOrder
+    @effectOrder
     vignette = new VignetteEffect
 
     onEnable () {
@@ -45,7 +53,7 @@ export class PostProcess extends Component {
     }
 
     onDisable () {
-        this._updateStage();
+        this._clearStage();
     }
 
     rebuild () {
@@ -57,11 +65,22 @@ export class PostProcess extends Component {
         this.node.removeAllChildren();
 
         this._effects.length = 0;
-        effectsOrder.forEach(name => {
+        let isReverse = false;
+        this._effectsOrder.forEach(name => {
             let effect = (this as any)[name] as PostEffectBase;
-            effect._postProcess = this;
+            effect.postProcess = this;
 
             if (effect && effect.enabled) {
+
+                effect._inited = false;
+
+                if (this._effects.length >= 2) {
+                    isReverse = !isReverse;
+                }
+                effect.isReverse = isReverse;
+                isReverse = !isReverse;
+
+
                 this._effects.push(effect);
             }
         })
@@ -70,6 +89,11 @@ export class PostProcess extends Component {
     private _updateStage () {
         if (this._stage) {
             this._stage.effects = this.enabledInHierarchy ? this._effects : [];
+        }
+    }
+    private _clearStage () {
+        if (this._stage) {
+            this._stage.clear();
         }
     }
 }

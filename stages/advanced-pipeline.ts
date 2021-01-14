@@ -1,9 +1,12 @@
 import { director, ForwardPipeline, GFXFeature, _decorator } from 'cc';
 
-const { ccclass } = _decorator;
+const { ccclass, property } = _decorator;
 
 @ccclass('AdvancedPipeline')
 export class AdvancedPipeline extends ForwardPipeline {
+
+    @property
+    usePostProcess = true;
 
     _isHDR = false;
     _isHDRSupported = false;
@@ -20,7 +23,7 @@ export class AdvancedPipeline extends ForwardPipeline {
 
         let res = super.activate();
 
-        this.macros.CC_USE_HDR = this._isHDRSupported;
+        this.macros.CC_USE_HDR = this._isHDRSupported && this.usePostProcess;
 
         return res;
     }
