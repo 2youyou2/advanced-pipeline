@@ -109,10 +109,16 @@ export class AdvancedFlow extends ForwardFlow {
             return;
         }
 
-        // camera.update();
+        if (camera.name === 'Editor Camera') {
+            return;
+        }
+        // TODO: hack
+        if (camera.name === 'Editor UICamera') {
+            camera.clearFlag = GFXClearFlag.ALL;
+        }
 
         const pipeline = this._pipeline as AdvancedPipeline;
-        pipeline.updateCameraUBO(camera);
+        // pipeline.updateCameraUBO(camera);
 
         // TODO: hack sceneCulling 
         // @ts-ignore
@@ -126,7 +132,7 @@ export class AdvancedFlow extends ForwardFlow {
 
         let postProcessStage = this._postProcessStage!;
         let usePostProcess = pipeline.usePostProcess && postProcessStage && postProcessStage._renderCommands.length !== 0;
-        if (!EDITOR || camera.name === 'Editor Camera') {
+        if (!EDITOR || camera.name === 'Editor UICamera') {
             this._depthStage?.render(camera);
             this._grassBendStage?.render(camera);
 
@@ -138,7 +144,7 @@ export class AdvancedFlow extends ForwardFlow {
 
         this._instanceForwardStage?.render(camera);
 
-        if (!EDITOR || camera.name === 'Editor Camera') {
+        if (!EDITOR || camera.name === 'Editor UICamera') {
             if (usePostProcess) {
                 postProcessStage.render(camera);
             }

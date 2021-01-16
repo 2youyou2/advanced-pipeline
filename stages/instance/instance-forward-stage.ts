@@ -31,9 +31,9 @@ export class InstanceForwardStage extends ForwardStage {
         instancedQueue.uploadBuffers(cmdBuff);
     }
 
-    renderInstances (camera: renderer.scene.Camera) {
+    renderInstances (camera: renderer.scene.Camera): boolean {
         if (!(camera.visibility & Layers.Instance)) {
-            return;
+            return false;
         }
 
         const pipeline = this._pipeline as ForwardPipeline;
@@ -44,7 +44,7 @@ export class InstanceForwardStage extends ForwardStage {
 
         this._instanceObjectQueue.uploadBuffers(cmdBuff);
         if (!this._instanceObjectQueue.queue.size) {
-            return;
+            return false;
         }
 
         (this as any)._additiveLightQueue.gatherLightPasses(camera, cmdBuff);
@@ -88,18 +88,24 @@ export class InstanceForwardStage extends ForwardStage {
         this._instanceObjectQueue.recordCommandBuffer(device, renderPass, cmdBuff);
 
         cmdBuff.endRenderPass();
+
+        return true;
     }
 
     render (camera: renderer.scene.Camera) {
-        this.renderInstances(camera);
+        let renderred = this.renderInstances(camera);
 
         // should not clear the already draw content
         let clearFlag = camera.clearFlag;
-        camera.clearFlag = 0;
+        if (renderred) {
+            camera.clearFlag = 0;
+        }
 
         super.render(camera);
 
-        camera.clearFlag = clearFlag;
+        if (renderred) {
+            camera.clearFlag = clearFlag;
+        }
     }
 
     rebuild () {
