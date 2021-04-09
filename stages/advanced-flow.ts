@@ -1,4 +1,5 @@
 import { _decorator, RenderFlow, renderer, ForwardStage, __private, ForwardPipeline, ForwardFlow, ShadowStage, GFXRect, RenderStage, Rect, GFXClearFlag, RenderPipeline, geometry, Pool, pipeline, Vec3 } from "cc";
+import { Camera } from "cc";
 import { EDITOR } from 'cc/env';
 import { AdvancedPipeline } from './advanced-pipeline';
 import { DepthBufferStage } from './depth-buffer/depth-buffer-stage';
@@ -10,7 +11,7 @@ const { ccclass, property } = _decorator;
 
 let _tempVec3 = new Vec3
 const roPool = new Pool<pipeline.IRenderObject>(() => ({ model: null!, depth: 0 }), 128);
-function getRenderObject (model: renderer.scene.Model, camera: renderer.scene.Camera) {
+function getRenderObject(model: renderer.scene.Model, camera: renderer.scene.Camera) {
     let depth = 0;
     if (model.node) {
         Vec3.subtract(_tempVec3, model.node.worldPosition, camera.position);
@@ -22,12 +23,28 @@ function getRenderObject (model: renderer.scene.Model, camera: renderer.scene.Ca
     return ro;
 }
 
-function sceneCulling (pipeline: ForwardPipeline, camera: renderer.scene.Camera) {
+export enum ClearFlag {
+    NONE = 0,
+    COLOR = 1,
+    DEPTH = 2,
+    STENCIL = 4,
+    DEPTH_STENCIL = DEPTH | STENCIL,
+    ALL = COLOR | DEPTH | STENCIL,
+}
+const SKYBOX_FLAG = ClearFlag.STENCIL << 1;
+
+
+function sceneCulling(pipeline: ForwardPipeline, camera: Camera) {
     const scene = camera.scene!;
     const models = scene.models;
 
     const renderObjects = pipeline.renderObjects;
     roPool.freeArray(renderObjects); renderObjects.length = 0;
+
+    if (pipeline.skybox.enabled && pipeline.skybox.model && (camera.clearFlag & SKYBOX_FLAG)) {
+        renderObjects.push(getRenderObject(pipeline.skybox.model, camera));
+    }
+
 
     for (let i = 0; i < models.length; i++) {
         const model = models[i];
@@ -58,7 +75,7 @@ export class AdvancedFlow extends ForwardFlow {
 
     _oldViewPort = new Rect;
 
-    constructor () {
+    constructor() {
         super();
 
         this._depthStage = new DepthBufferStage();
@@ -92,7 +109,7 @@ export class AdvancedFlow extends ForwardFlow {
     //     return true;
     // }
 
-    public activate (pipeline: RenderPipeline) {
+    public activate(pipeline: RenderPipeline) {
         this._stages.length = 0;
 
         this._stages.push(this._depthStage!);
@@ -103,7 +120,7 @@ export class AdvancedFlow extends ForwardFlow {
         super.activate(pipeline);
     }
 
-    public render (camera: renderer.scene.Camera) {
+    public render(camera: renderer.scene.Camera) {
         let hasRenderThings = Number(camera.visibility) !== 0;
         if (!hasRenderThings) {
             return;
@@ -151,11 +168,11 @@ export class AdvancedFlow extends ForwardFlow {
         }
     }
 
-    rebuild () {
+    rebuild() {
 
     }
 
-    destroy () {
+    destroy() {
 
     }
 }
