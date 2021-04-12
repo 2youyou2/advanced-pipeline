@@ -3,7 +3,6 @@ uniform Color {
     float ambientOcclusion;
     float randomDarken;
 
-    float specularHighlight;
     float translucency;
 };
 
@@ -21,6 +20,28 @@ vec3 BlendOverlay(vec3 a, vec3 b)
 	color.g = BlendOverlay(a.g, b.g);
 	color.b = BlendOverlay(a.b, b.b);
 	return color;
+}
+
+
+void Translucency(vec3 viewDirectionWS, float amount, float shadowAttenuation, inout vec3 color) {
+  vec3 ld = normalize(cc_mainLitDir.xyz);
+  float VdotL = max(0., dot(viewDirectionWS, ld)) * amount;
+
+  //TODO: Incorperate size parameter
+  VdotL = pow(VdotL, 4.) * 8.;
+
+  //Translucency masked by shadows and grass mesh bottom
+  float tMask = VdotL * shadowAttenuation;// * light.distanceAttenuation;
+
+  //Fade the effect out as the sun approaches the horizon (75 to 90 degrees)
+  // float sunAngle = dot(vec3(0., 1., 0.), ld);
+  // float angleMask = clamp(sunAngle * 6.666, 0., 1.); /* 1.0/0.15 = 6.666 */
+
+  // tMask *= angleMask;
+
+  vec3 tColor = color + BlendOverlay(cc_mainLitColor.rgb * cc_mainLitColor.w, color);
+
+  color = mix(color, tColor, tMask);
 }
 
 

@@ -31,29 +31,29 @@ struct WindSettings
 };
 
 WindSettings getWinSettings (float mask) {
-    WindSettings s;
+  WindSettings s;
 
-    s.ambientStrength = windStrength;
-    s.speed = windSpeed;
-    s.direction = windDirection;
-    s.swinging = windSwinging;
-    s.mask = mask;
-    s.randObject = windRandObject;
-    s.randVertex = windRandVertex;
-    s.randObjectStrength = windRandObjectStrength;
-    s.gustStrength = windGustStrength;
-    s.gustFrequency = windGustFrequency;
+  s.ambientStrength = windStrength;
+  s.speed = windSpeed;
+  s.direction = windDirection;
+  s.swinging = windSwinging;
+  s.mask = mask;
+  s.randObject = windRandObject;
+  s.randVertex = windRandVertex;
+  s.randObjectStrength = windRandObjectStrength;
+  s.gustStrength = windGustStrength;
+  s.gustFrequency = windGustFrequency;
 
-    return s;
-  }
-
-//World-align UV moving in wind direction
-vec2 getGustingUV(vec3 wPos, WindSettings s) {
-	return (wPos.xz * s.gustFrequency * 0.01) + (cc_time.x * s.speed * s.gustFrequency * 0.01) * -s.direction.xy;
+  return s;
 }
 
-float sampleGustMap(vec3 wPos, WindSettings s, sampler2D windMap) {
-	vec2 gustUV = getGustingUV(wPos, s);
+//World-align UV moving in wind direction
+vec2 getGustingUV(vec3 wPos, WindSettings s, float speed) {
+	return (wPos.xz * s.gustFrequency * speed) + (cc_time.x * s.speed * s.gustFrequency * speed) * -s.direction.xy;
+}
+
+float sampleGustMap(vec3 wPos, WindSettings s, sampler2D windMap, float speed, float uvScale) {
+	vec2 gustUV = getGustingUV(wPos, s, speed) * uvScale;
 	float gust = texture(windMap, gustUV).r;
 
 	gust *= s.gustStrength * s.mask;
@@ -62,7 +62,7 @@ float sampleGustMap(vec3 wPos, WindSettings s, sampler2D windMap) {
 }
 
 vec4 getWindOffset (in vec3 positionOS, in vec3 wPos, float randOffset, WindSettings s, sampler2D windMap) {
-  	vec4 offset = vec4(0.);
+  vec4 offset = vec4(0.);
 
 	//Random offset per vertex
 	float f = length(positionOS.xz) * s.randVertex;
@@ -73,7 +73,7 @@ vec4 getWindOffset (in vec3 positionOS, in vec3 wPos, float randOffset, WindSett
 	sine = mix(sine * 0.5 + 0.5, sine, s.swinging);
 
 	//Apply gusting
-	float gust = sampleGustMap(wPos, s, windMap);
+	float gust = sampleGustMap(wPos, s, windMap, 0.01, 1.);
 
 	//Scale sine
 	sine = sine * s.mask * strength;

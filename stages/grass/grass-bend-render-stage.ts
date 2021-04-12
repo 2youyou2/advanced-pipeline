@@ -35,7 +35,7 @@ const _phaseID = getPhaseID('grass-bend');
 @ccclass("GrassBendRenderStage")
 export class GrassBendRenderStage extends RenderStage {
     static get instance (): GrassBendRenderStage | null {
-        let flow = director.root!.pipeline.flows.find(f => f.name === 'ForwardFlow');
+        let flow = director.root!.pipeline.flows.find(f => f.name === 'AdvancedFlow');
         if (!flow) return null;
         return flow.stages.find(s => s.name === 'GrassBendRenderStage') as GrassBendRenderStage;
     }

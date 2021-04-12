@@ -7,7 +7,11 @@ CCEffect %{
     - vert: vs:vert
       frag: fs:frag
       properties: &props
-        alphaTest:      { value: 0.5 }
+        alphaTest:     { value: 0.5, target: params.x }
+        shadowIntensity: { value: 0.4, target: params.y }
+
+        randMap:        { value: black }
+        randMapTiling:  { value: 1, target: params.z }
 
         windMap:        { value: black }
         windDirection: { value: [1, 1] }
@@ -33,9 +37,7 @@ CCEffect %{
         ambientOcclusion: { value: 0.704 }
         randomDarken: { value: 0.287 }
 
-        specularHighlight: { value: 0 }
-        translucency: { value: 1 }
-        shadowIntensity: { value: 0.4 }
+        translucency:  { value: 1 }
         fixedNormal: { value: [0.5, 0.5, 1, 1], editor: { parent: USE_FIXED_NORMAL } }
     - vert: shadow-caster-vs:vert
       frag: shadow-caster-fs:frag
@@ -57,8 +59,8 @@ CCProgram shared-ubos %{
     vec4 mainTiling;
     vec4 mainColorScale;
     vec4 fixedNormal;
-    float alphaTest;
-    float shadowIntensity;
+
+    vec4 params;
   };
 
   #include <./wind>
@@ -80,6 +82,25 @@ CCProgram get-mask %{
     return 0.;
     #endif
   }
+}%
+
+CCProgram get-rand %{
+  #include <shared-ubos>
+  
+  uniform sampler2D randMap;
+
+  float objectPosRand01(mat4 mat) {
+    return fract(mat[3][0] + mat[3][1] + mat[3][2]);
+  }
+
+  float getRand (mat4 mat) {
+    return objectPosRand01(mat);
+  }
+
+  float getRand (vec3 pos) {
+    return texture(randMap, pos.xz * params.z).r;
+  }
+  
 }%
 
 CCProgram shared-funcs %{
@@ -105,10 +126,6 @@ CCProgram shared-funcs %{
   float randomRange (vec2 seed, float minv, float maxv) {
     float randomno = fract(sin(dot(seed, vec2(12.9898, 78.233)))*43758.5453);
     return mix(minv, maxv, randomno);
-  }
-
-  float objectPosRand01(mat4 mat) {
-    return fract(mat[3][0] + mat[3][1] + mat[3][2]);
   }
 
   void calcGrassOffset (in vec4 lPos, inout vec4 wPos, float rand, float mask) {
@@ -160,6 +177,8 @@ CCProgram vs %{
   in vec3 a_color;
 
   #include <get-mask>
+  #include <get-rand>
+
   #include <shared-ubos>
   #include <shared-funcs>
 
@@ -184,7 +203,7 @@ CCProgram vs %{
 
     float mask = getMask();
 
-    float rand = objectPosRand01(matWorld); // should be 0 - 1;
+    float rand = getRand(wPos.xyz);
     calcGrassOffset(lPos, wPos, rand, mask);
 
     v_color = calcGrassVertexColor(lPos, wPos, rand, mask);
@@ -251,54 +270,27 @@ CCProgram fs %{
     return shadowAttenuation;
   }
 
-  void Translucency(vec3 viewDirectionWS, float amount, float shadowAttenuation, inout vec3 color) {
-    vec3 ld = normalize(cc_mainLitDir.xyz);
-    float VdotL = max(0., dot(viewDirectionWS, ld)) * amount;
-
-    //TODO: Incorperate size parameter
-    VdotL = pow(VdotL, 4.) * 8.;
-
-    //Translucency masked by shadows and grass mesh bottom
-    float tMask = VdotL * shadowAttenuation;// * light.distanceAttenuation;
-
-    //Fade the effect out as the sun approaches the horizon (75 to 90 degrees)
-    // float sunAngle = dot(vec3(0., 1., 0.), ld);
-    // float angleMask = clamp(sunAngle * 6.666, 0., 1.); /* 1.0/0.15 = 6.666 */
-
-    // tMask *= angleMask;
-
-	  vec3 tColor = color + BlendOverlay(cc_mainLitColor.rgb * cc_mainLitColor.w, color);
-
-    color = mix(color, tColor, tMask);
-  }
-
   vec4 frag () {
     #if USE_MAIN_TXTURE
-    vec2 uv = mainTiling.xy + mainTiling.zw * v_uv;
-    vec4 col = texture(mainTexture, uv);
+      vec2 uv = mainTiling.xy + mainTiling.zw * v_uv;
+      vec4 col = texture(mainTexture, uv);
     #else
-    vec4 col = vec4(1.);
+      vec4 col = vec4(1.);
     #endif
 
     float alpha = col.a;
     vec3 albedo = col.rgb;
 
-    if (alpha < alphaTest) {
+    if (alpha < params.x) {
       discard;
     }
 
     // apply vertex color
     albedo *= v_color.rgb;
 
-    // wind gust color
-	  WindSettings wind = getWinSettings(v_color.r);
-    wind.gustStrength = 1.;
-    float gust = sampleGustMap(v_wPos, wind, windMap);
-	  albedo += min(vec3(gust * 10. * v_color.a), windGustTint);
-
     // shadow
     float shadowAttenuation = getShadowAttenuation();
-    shadowAttenuation = 1. - min(shadowAttenuation, shadowIntensity);
+    shadowAttenuation = 1. - min(shadowAttenuation, params.y);
 
     // lighting
     vec3 viewDirection = normalize(cc_cameraPos.xyz - v_wPos);
@@ -324,13 +316,20 @@ CCProgram fs %{
 
     // translucency
     Translucency(viewDirection, translucency, shadowAttenuation, final.rgb);
+    
+    // wind gust color
+    WindSettings wind = getWinSettings(v_color.r);
+    wind.gustStrength = 1.;
+    float gust = sampleGustMap(v_wPos, wind, windMap, 0.02, 2.);
+    final += (gust * v_color.a * windGustTint);
 
     final = CC_APPLY_FOG(final, factor_fog);
 
-    return final;
-
     // debug
+    // return vec4(s.normal, 1.);
     // return v_color;
+
+    return final;
   }
 }%
 
@@ -343,6 +342,8 @@ CCProgram shadow-caster-vs %{
   in vec3 a_color;
 
   #include <get-mask>
+  #include <get-rand>
+
   #include <shared-ubos>
   #include <shared-funcs>
 
@@ -362,9 +363,8 @@ CCProgram shadow-caster-vs %{
 
     float mask = getMask();
 
-    float rand = objectPosRand01(matWorld); // should be 0 - 1;
+    float rand = getRand(wPos.xyz);
     calcGrassOffset(lPos, wPos, rand, mask);
-
 
     vec4 clipPos = cc_matLightViewProj * wPos;
 
@@ -394,7 +394,7 @@ CCProgram shadow-caster-fs %{
     vec4 baseColor = vec4(1.);
     #endif
 
-    if (baseColor.a < alphaTest) discard;
+    if (baseColor.a < params.x) discard;
 
     return packDepthToRGBA(v_clip_depth.x / v_clip_depth.y * 0.5 + 0.5);
   }
