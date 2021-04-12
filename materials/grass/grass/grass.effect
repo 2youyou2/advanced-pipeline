@@ -295,24 +295,30 @@ CCProgram fs %{
     // lighting
     vec3 viewDirection = normalize(cc_cameraPos.xyz - v_wPos);
 
-    PhongSurface s;
-    s.diffuse = albedo;
-    s.specular = vec3(0.);
-    s.emissive = vec3(0.);
-    s.opacity = alpha;
-    s.glossiness = 10.;
-    s.position = v_wPos;
+    #if USE_LIGHT
 
-    #if USE_FIXED_NORMAL
-      s.normal = fixedNormal.xyz;
+      PhongSurface s;
+      s.diffuse = albedo;
+      s.specular = vec3(0.);
+      s.emissive = vec3(0.);
+      s.opacity = alpha;
+      s.glossiness = 10.;
+      s.position = v_wPos;
+
+      #if USE_FIXED_NORMAL
+        s.normal = fixedNormal.xyz;
+      #else
+        s.normal = v_normal;
+      #endif
+
+      s.viewDirection = viewDirection;
+
+      vec4 final = CCPhongShading(s);
+      final.rgb = final.rgb * shadowAttenuation;
+
     #else
-      s.normal = v_normal;
+      vec4 final = vec4(albedo * shadowAttenuation, alpha);
     #endif
-
-    s.viewDirection = viewDirection;
-
-    vec4 final = CCPhongShading(s);
-    final.rgb = final.rgb * shadowAttenuation;
 
     // translucency
     Translucency(viewDirection, translucency, shadowAttenuation, final.rgb);
