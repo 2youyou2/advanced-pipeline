@@ -15,7 +15,7 @@
     ],
     "renderTextures": [],
     "materials": [],
-    "usePostProcess": true
+    "usePostProcess": false
   },
   {
     "__type__": "ShadowFlow",
@@ -36,7 +36,7 @@
   },
   {
     "__type__": "AdvancedFlow",
-    "_name": "",
+    "_name": "AdvancedFlow",
     "_priority": 0,
     "_tag": 0,
     "_stages": []

@@ -11,7 +11,7 @@ const { ccclass, property } = _decorator;
 
 let _tempVec3 = new Vec3
 const roPool = new Pool<pipeline.IRenderObject>(() => ({ model: null!, depth: 0 }), 128);
-function getRenderObject(model: renderer.scene.Model, camera: renderer.scene.Camera) {
+function getRenderObject (model: renderer.scene.Model, camera: renderer.scene.Camera) {
     let depth = 0;
     if (model.node) {
         Vec3.subtract(_tempVec3, model.node.worldPosition, camera.position);
@@ -34,7 +34,7 @@ export enum ClearFlag {
 const SKYBOX_FLAG = ClearFlag.STENCIL << 1;
 
 
-function sceneCulling(pipeline: ForwardPipeline, camera: Camera) {
+function sceneCulling (pipeline: ForwardPipeline, camera: renderer.scene.Camera) {
     const scene = camera.scene!;
     const models = scene.models;
 
@@ -75,7 +75,22 @@ export class AdvancedFlow extends ForwardFlow {
 
     _oldViewPort = new Rect;
 
-    constructor() {
+    _clearFlag = 0;
+
+    get depthStage () {
+        return this.depthStage;
+    }
+    get grassBendStage () {
+        return this.grassBendStage;
+    }
+    get instanceForwardStage () {
+        return this._instanceForwardStage;
+    }
+    get postProcessStage () {
+        return this._postProcessStage;
+    }
+
+    constructor () {
         super();
 
         this._depthStage = new DepthBufferStage();
@@ -92,24 +107,7 @@ export class AdvancedFlow extends ForwardFlow {
         this._stages.push(this._postProcessStage);
     }
 
-    // public initialize (info: __private.cocos_core_pipeline_render_flow_IRenderFlowInfo): boolean {
-    //     super.initialize(info);
-
-    //     if (this._stages.length === 0) {
-    //         this._depthStage = new DepthBufferStage();
-    //         this._grassBendStage = new GrassBendRenderStage();
-    //         this._instanceForwardStage = new InstanceForwardStage();
-    //         this._postProcessStage = new PostProcessStage();
-
-    //         this._stages.push(this._depthStage);
-    //         this._stages.push(this._grassBendStage);
-    //         this._stages.push(this._instanceForwardStage);
-    //         this._stages.push(this._postProcessStage);
-    //     }
-    //     return true;
-    // }
-
-    public activate(pipeline: RenderPipeline) {
+    public activate (pipeline: RenderPipeline) {
         this._stages.length = 0;
 
         this._stages.push(this._depthStage!);
@@ -120,19 +118,25 @@ export class AdvancedFlow extends ForwardFlow {
         super.activate(pipeline);
     }
 
-    public render(camera: renderer.scene.Camera) {
+    public render (camera: renderer.scene.Camera) {
         let hasRenderThings = Number(camera.visibility) !== 0;
         if (!hasRenderThings) {
             return;
         }
 
-        if (camera.name === 'Editor Camera') {
-            return;
+        let oldClearFlag = camera.clearFlag;
+        if (EDITOR) {
+            if (camera.name === 'Editor Camera') {
+                this._clearFlag = camera.clearFlag;
+                return;
+            }
+
+            // TODO: hack
+            if (camera.name === 'Editor UICamera') {
+                camera.clearFlag = this._clearFlag;
+            }
         }
-        // TODO: hack
-        if (camera.name === 'Editor UICamera') {
-            camera.clearFlag = GFXClearFlag.ALL;
-        }
+
 
         const pipeline = this._pipeline as AdvancedPipeline;
         // pipeline.updateCameraUBO(camera);
@@ -147,11 +151,12 @@ export class AdvancedFlow extends ForwardFlow {
             sceneCulling(pipeline, camera);
         }
 
+        this._grassBendStage?.render(camera);
+
         let postProcessStage = this._postProcessStage!;
         let usePostProcess = pipeline.usePostProcess && postProcessStage && postProcessStage._renderCommands.length !== 0;
         if (!EDITOR || camera.name === 'Editor UICamera') {
             this._depthStage?.render(camera);
-            this._grassBendStage?.render(camera);
 
             if (usePostProcess) {
                 postProcessStage.oldCameraSetting.set(camera);
@@ -166,13 +171,20 @@ export class AdvancedFlow extends ForwardFlow {
                 postProcessStage.render(camera);
             }
         }
+
+        if (EDITOR) {
+            // TODO: hack
+            if (camera.name === 'Editor UICamera') {
+                camera.clearFlag = oldClearFlag;
+            }
+        }
     }
 
-    rebuild() {
+    rebuild () {
 
     }
 
-    destroy() {
+    destroy () {
 
     }
 }

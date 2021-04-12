@@ -11,7 +11,7 @@ export class AdvancedPipeline extends ForwardPipeline {
     _isHDR = false;
     _isHDRSupported = false;
 
-    activate(): boolean {
+    activate (): boolean {
         let device = this._device || director.root?.device;
         if (device.hasFeature(GFXFeature.FORMAT_R11G11B10F) ||
             device.hasFeature(GFXFeature.TEXTURE_HALF_FLOAT) ||
@@ -23,8 +23,7 @@ export class AdvancedPipeline extends ForwardPipeline {
 
         let res = super.activate();
 
-        // no hdr
-        //this.macros.CC_USE_HDR = this._isHDRSupported && this.usePostProcess;
+        this.macros.CC_USE_HDR = this._isHDRSupported && this.usePostProcess;
 
         return res;
     }

@@ -23,7 +23,7 @@ const _phaseID = getPhaseID('depth-buffer');
 @ccclass("DepthBufferStage")
 export class DepthBufferStage extends RenderStage {
     static get instance (): DepthBufferStage | null {
-        let flow = director.root!.pipeline.flows.find(f => f.name === 'ForwardFlow');
+        let flow = director.root!.pipeline.flows.find(f => f.name === 'AdvancedFlow');
         if (!flow) return null;
         return flow.stages.find(s => s.name === 'DepthBufferStage') as DepthBufferStage;
     }
