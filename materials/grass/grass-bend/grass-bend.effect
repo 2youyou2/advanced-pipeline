@@ -74,8 +74,6 @@ CCProgram grass-bend-fs %{
   // in vec3 v_color;
 
   vec4 frag () {
-    vec4 col = vec4(1.);
-
     //Bottom-facing normals
 		float mask = -v_normal.y * params.z;// * v_color.r;
 
@@ -83,7 +81,5 @@ CCProgram grass-bend-fs %{
 		vec2 dir = (v_normal.xz * params.w) * 0.5 + 0.5;
 
     return vec4(dir.x, height, dir.y, mask);
-
-    // return vec4(1., 0., 0., 1.);
   }
 }%
