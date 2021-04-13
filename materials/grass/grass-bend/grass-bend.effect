@@ -36,8 +36,6 @@ in vec3 a_color;
 
 out vec3 v_position;
 out vec3 v_normal;
-out vec3 v_tangent;
-out vec3 v_bitangent;
 out vec2 v_uv;
 out vec3 v_color;
 
@@ -57,8 +55,6 @@ vec4 vert () {
   // v_color = a_color;
   v_position = wPos.xyz;
   v_normal = normalize((matWorldIT * vec4(In.normal, 0.0)).xyz);
-  v_tangent = normalize((matWorld * vec4(In.tangent.xyz, 0.0)).xyz);
-  v_bitangent = cross(v_normal, v_tangent) * In.tangent.w; // note the cross order
 
   v_uv = a_texCoord;
 

@@ -65,11 +65,7 @@ vec4 getBendOffset(vec3 wPos, BendSettings b) {
 	float bendHeight = vec.y;
 	float dist = grassHeight - bendHeight;
 
-	//Note since 7.1.5 somehow this causes the grass to bend down after the bender reaches a certain height
-	// dist = abs(dist); //If bender is below grass, dont bend up
-
 	float weight = clamp(dist, 0., 1.);
-
 
 	offset.xz = vec.xz * b.mask * weight * b.pushStrength;
 	offset.y = b.mask * (vec.a * 0.75) * weight * b.flattenStrength;
